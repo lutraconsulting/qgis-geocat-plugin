@@ -24,8 +24,6 @@ from PyQt4.QtCore import *
 
 import psycopg2
 
-# FIXME: Clean out any unrequired functions
-
 
 def get_connection(conn_info):
     """ Connect to the database using conn_info dict:

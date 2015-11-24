@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>412</width>
+    <height>246</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Geo Cat Configuration</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/plugins/GeoCat/icon.png</normaloff>:/plugins/GeoCat/icon.png</iconset>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="postGisConnectionLabel">
+     <property name="text">
+      <string>PostGIS Connection</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="postGisConnectionComboBox">
+     <property name="maximumSize">
+      <size>
+       <width>1024</width>
+       <height>16777215</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="MetadataTableSchemaLabel">
+     <property name="text">
+      <string>Metadata Table Schema</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="metadataTableSchemaComboBox"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="metadataTableNameLabel">
+     <property name="text">
+      <string>Metadata Table Name</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QComboBox" name="metadataTableNameComboBox"/>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="titleColumnLabel">
+     <property name="text">
+      <string>Title Column</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="titleColumnComboBox"/>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="abstractColumnLabel">
+     <property name="text">
+      <string>Abstract Column</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="abstractColumnComboBox"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="layerSchemaNameLabel">
+     <property name="text">
+      <string>Column for GIS Layer Schema Name</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="layerSchemaNameComboBox"/>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="layerTableNameLabel">
+     <property name="text">
+      <string>Column for GIS Layer Table Name</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QComboBox" name="layerTableNameComboBox"/>
+   </item>
+   <item row="8" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>8</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>227</x>
+     <y>222</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>239</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>295</x>
+     <y>228</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>239</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>postGisConnectionComboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>Dialog</receiver>
+   <slot>on_connection_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>202</x>
+     <y>22</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>14</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>metadataTableSchemaComboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>Dialog</receiver>
+   <slot>on_metadata_schema_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>202</x>
+     <y>45</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>135</x>
+     <y>44</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>metadataTableNameComboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>Dialog</receiver>
+   <slot>on_metadata_table_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>203</x>
+     <y>76</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>151</x>
+     <y>74</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>on_connection_changed()</slot>
+  <slot>on_metadata_schema_changed()</slot>
+  <slot>on_metadata_table_changed()</slot>
+ </slots>
+</ui>

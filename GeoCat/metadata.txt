@@ -14,7 +14,7 @@ version=0.1
 author=Lutra Consulting for Dartmoor National Park Authority
 email=gi@dartmoor.gov.uk
 
-about=Plugin for loading PostGIS layers based on a metadata search
+about=GeoCAT is short name for Geographic Information Systems Catalogue and is a plugin used to search GIS metadata. GeoCAT can be used to search data describing the "who, what, where, when and how" of map layers. GeoCAT was developed on behalf of Dartmoor National Park, UK.
 
 tracker=https://github.com/lutraconsulting/qgis-geocat-plugin/issues
 repository=https://github.com/lutraconsulting/qgis-geocat-plugin

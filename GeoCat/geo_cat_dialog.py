@@ -71,7 +71,7 @@ class GeoCatDialog(QtGui.QDialog, FORM_CLASS):
         return con.cursor()
 
     def show_help(self):
-        help_url = 'http://example.com/'  # FIXME
+        help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
         QtGui.QDesktopServices.openUrl(QUrl(help_url))
 
     def search(self):

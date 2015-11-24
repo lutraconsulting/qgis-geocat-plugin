@@ -26,6 +26,7 @@ from PyQt4.QtGui import QAction, QIcon
 import resources
 # Import the code for the dialog
 from geo_cat_dialog import GeoCatDialog
+from geo_cat_config_dialog import GeoCatConfigDialog
 import os.path
 
 
@@ -166,6 +167,12 @@ class GeoCat:
             text=self.tr(u'Search For Tables Using Metadata'),
             callback=self.run,
             parent=self.iface.mainWindow())
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Configure Geo Cat'),
+            callback=self.configure,
+            parent=self.iface.mainWindow(),
+            add_to_toolbar=False)
 
 
     def unload(self):
@@ -190,3 +197,10 @@ class GeoCat:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+
+    def configure(self):
+        """Run method that performs all the real work"""
+        # show the dialog
+        config_dlg = GeoCatConfigDialog()
+        # Run the dialog event loop
+        config_dlg.exec_()
