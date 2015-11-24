@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/GeoCat" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>

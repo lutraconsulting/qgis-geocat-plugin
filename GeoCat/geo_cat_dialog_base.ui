@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GeoCatDialogBase</class>
+ <widget class="QDialog" name="GeoCatDialogBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>601</width>
+    <height>409</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Geo Cat</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="descriptionLabel">
+     <property name="text">
+      <string>Search for a layer based on general term (e.g. bats)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QPushButton" name="searchPushButton">
+     <property name="text">
+      <string>Search</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="resultsLabel">
+     <property name="text">
+      <string>Results</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLabel" name="detailsLabel">
+     <property name="text">
+      <string>Details</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QListWidget" name="resultsListWidget">
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1" colspan="2">
+    <widget class="QPlainTextEdit" name="detailsPlainTextEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>2</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QPushButton" name="addSelectedPushButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>Add Selected</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="closePushButton">
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="helpPushButton">
+       <property name="text">
+        <string>Help</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QLineEdit" name="searchLineEdit"/>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>searchLineEdit</tabstop>
+  <tabstop>searchPushButton</tabstop>
+  <tabstop>resultsListWidget</tabstop>
+  <tabstop>detailsPlainTextEdit</tabstop>
+  <tabstop>addSelectedPushButton</tabstop>
+  <tabstop>closePushButton</tabstop>
+  <tabstop>helpPushButton</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>addSelectedPushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>add_selected_layers()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>145</x>
+     <y>385</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>204</x>
+     <y>54</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>searchPushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>search()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>507</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>448</x>
+     <y>11</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>resultsListWidget</sender>
+   <signal>currentRowChanged(int)</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>display_details(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>119</x>
+     <y>134</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>65</x>
+     <y>54</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>resultsListWidget</sender>
+   <signal>itemSelectionChanged()</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>on_result_sel_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>189</x>
+     <y>160</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>137</x>
+     <y>52</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>searchLineEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>search()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>37</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>293</x>
+     <y>6</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>closePushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>463</x>
+     <y>389</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>366</x>
+     <y>382</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>helpPushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>GeoCatDialogBase</receiver>
+   <slot>show_help()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>535</x>
+     <y>384</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>375</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>show_help()</slot>
+  <slot>add_selected_layers()</slot>
+  <slot>search()</slot>
+  <slot>display_details(int)</slot>
+  <slot>on_result_sel_changed()</slot>
+ </slots>
+</ui>
