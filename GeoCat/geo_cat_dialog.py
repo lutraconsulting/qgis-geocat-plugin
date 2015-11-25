@@ -139,8 +139,8 @@ class GeoCatDialog(QtGui.QDialog, Ui_GeoCatDialogBase):
             res['geom_col'] = geom_col
             res['geom_type'] = ty
             self.search_results.append(res)
-            display_geom = ty
-            if display_geom.lower().startswith('multi'):
+            display_geom = ty.lower()
+            if display_geom.startswith('multi'):
                 display_geom = display_geom[5:]
             self.resultsListWidget.addItem('%s (%s)' % (title, display_geom))
 
