@@ -82,32 +82,34 @@ class GeoCatConfigDialog(QtGui.QDialog, Ui_Dialog):
             self.postGisConnectionComboBox.findText(req_con)
         )
 
-        self.refresh_schemas()
+        if self.postGisConnectionComboBox.currentIndex() >= 0:
 
-        self.metadataTableSchemaComboBox.setCurrentIndex(
-            self.metadataTableSchemaComboBox.findText(req_met_tab_sc)
-        )
+            self.refresh_schemas()
 
-        self.refresh_tables()
+            self.metadataTableSchemaComboBox.setCurrentIndex(
+                self.metadataTableSchemaComboBox.findText(req_met_tab_sc)
+            )
 
-        self.metadataTableNameComboBox.setCurrentIndex(
-            self.metadataTableNameComboBox.findText(req_met_tab_ta)
-        )
+            self.refresh_tables()
 
-        self.refresh_columns()
+            self.metadataTableNameComboBox.setCurrentIndex(
+                self.metadataTableNameComboBox.findText(req_met_tab_ta)
+            )
 
-        self.titleColumnComboBox.setCurrentIndex(
-            self.titleColumnComboBox.findText(req_title)
-        )
-        self.abstractColumnComboBox.setCurrentIndex(
-            self.abstractColumnComboBox.findText(req_abs)
-        )
-        self.layerSchemaNameComboBox.setCurrentIndex(
-            self.layerSchemaNameComboBox.findText(req_lay_sch)
-        )
-        self.layerTableNameComboBox.setCurrentIndex(
-            self.layerTableNameComboBox.findText(req_lay_tab)
-        )
+            self.refresh_columns()
+
+            self.titleColumnComboBox.setCurrentIndex(
+                self.titleColumnComboBox.findText(req_title)
+            )
+            self.abstractColumnComboBox.setCurrentIndex(
+                self.abstractColumnComboBox.findText(req_abs)
+            )
+            self.layerSchemaNameComboBox.setCurrentIndex(
+                self.layerSchemaNameComboBox.findText(req_lay_sch)
+            )
+            self.layerTableNameComboBox.setCurrentIndex(
+                self.layerTableNameComboBox.findText(req_lay_tab)
+            )
 
         self.postGisConnectionComboBox.blockSignals(False)
         self.metadataTableSchemaComboBox.blockSignals(False)
