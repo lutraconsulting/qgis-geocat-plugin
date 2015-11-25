@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Geo Cat</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/plugins/GeoCat/icon.png</normaloff>:/plugins/GeoCat/icon.png</iconset>
+  </property>
   <property name="modal">
    <bool>true</bool>
   </property>
@@ -110,7 +114,9 @@
   <tabstop>closePushButton</tabstop>
   <tabstop>helpPushButton</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>addSelectedPushButton</sender>

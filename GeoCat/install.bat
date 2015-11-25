@@ -1,3 +1,5 @@
+@echo off
+
 rem /***************************************************************************
 rem  GeoCat
 rem                                  A QGIS plugin
@@ -24,3 +26,5 @@ xcopy /e /y *.py %DEST%
 xcopy /e /y *.png %DEST%
 xcopy /e /y metadata.txt %DEST%
 xcopy /e /y *.ui %DEST%
+xcopy /e /y *.qrc %DEST%
+PAUSE
