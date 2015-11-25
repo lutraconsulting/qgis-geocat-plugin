@@ -24,7 +24,7 @@
 import os
 
 from PyQt4 import QtGui, uic
-from PyQt4.QtCore import QUrl
+from PyQt4.QtCore import QUrl, QSettings
 from dbutils import (
     get_postgres_conn_info,
     get_connection
@@ -56,14 +56,15 @@ class GeoCatDialog(QtGui.QDialog, FORM_CLASS):
         self.search_results = []
 
     def _setup_config(self):
-        self.config['connection'] = 'Pete'
-        self.config['cat_schema'] = '"geocat"'
-        self.config['cat_table'] = '"metadata"'
-        self.config['title_col'] = '"name"'
-        self.config['abstract_col'] = '"abstract"'
-        self.config['date_col'] = '"date_published"'
-        self.config['schema_col'] = '"schema"'
-        self.config['table_col'] = '"table"'
+        s = QSettings()
+        self.config['connection'] = s.value('GeoCat/connection', '', type=str)
+        self.config['cat_schema'] = '"%s"' % s.value('GeoCat/metadataTableSchema', '', type=str)
+        self.config['cat_table'] = '"%s"' % s.value('GeoCat/metadataTableName', '', type=str)
+        self.config['title_col'] = '"%s"' % s.value('GeoCat/titleColumn', '', type=str)
+        self.config['abstract_col'] = '"%s"' % s.value('GeoCat/abstractColumn', '', type=str)
+        self.config['date_col'] = '"date_published"'  # FIXME
+        self.config['schema_col'] = '"%s"' % s.value('GeoCat/gisLayerSchemaCol', '', type=str)
+        self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
 
     def _db_cur(self):
         con_info = get_postgres_conn_info(self.config['connection'])

@@ -24,7 +24,7 @@
 import os
 
 from PyQt4 import QtGui, uic
-from PyQt4.QtCore import QUrl
+from PyQt4.QtCore import QUrl, QSettings
 from dbutils import (
     get_postgres_connections,
     get_postgres_conn_info,
@@ -57,6 +57,64 @@ class GeoCatConfigDialog(QtGui.QDialog, FORM_CLASS):
         self.setupUi(self)
 
         self.postGisConnectionComboBox.addItems(get_postgres_connections())
+
+        # See if we can put back the old config
+        s = QSettings()
+
+        req_con = s.value('GeoCat/connection', '', type=str)
+        req_met_tab_sc = s.value('GeoCat/metadataTableSchema', '', type=str)
+        req_met_tab_ta = s.value('GeoCat/metadataTableName', '', type=str)
+        req_title = s.value('GeoCat/titleColumn', '', type=str)
+        req_abs = s.value('GeoCat/abstractColumn', '', type=str)
+        req_lay_sch = s.value('GeoCat/gisLayerSchemaCol', '', type=str)
+        req_lay_tab = s.value('GeoCat/gisLayerTableCol', '', type=str)
+
+        self.postGisConnectionComboBox.blockSignals(True)
+        self.metadataTableSchemaComboBox.blockSignals(True)
+        self.metadataTableNameComboBox.blockSignals(True)
+        self.titleColumnComboBox.blockSignals(True)
+        self.abstractColumnComboBox.blockSignals(True)
+        self.layerSchemaNameComboBox.blockSignals(True)
+        self.layerTableNameComboBox.blockSignals(True)
+
+        self.postGisConnectionComboBox.setCurrentIndex(
+            self.postGisConnectionComboBox.findText(req_con)
+        )
+
+        self.refresh_schemas()
+
+        self.metadataTableSchemaComboBox.setCurrentIndex(
+            self.metadataTableSchemaComboBox.findText(req_met_tab_sc)
+        )
+
+        self.refresh_tables()
+
+        self.metadataTableNameComboBox.setCurrentIndex(
+            self.metadataTableNameComboBox.findText(req_met_tab_ta)
+        )
+
+        self.refresh_columns()
+
+        self.titleColumnComboBox.setCurrentIndex(
+            self.titleColumnComboBox.findText(req_title)
+        )
+        self.abstractColumnComboBox.setCurrentIndex(
+            self.abstractColumnComboBox.findText(req_abs)
+        )
+        self.layerSchemaNameComboBox.setCurrentIndex(
+            self.layerSchemaNameComboBox.findText(req_lay_sch)
+        )
+        self.layerTableNameComboBox.setCurrentIndex(
+            self.layerTableNameComboBox.findText(req_lay_tab)
+        )
+
+        self.postGisConnectionComboBox.blockSignals(False)
+        self.metadataTableSchemaComboBox.blockSignals(False)
+        self.metadataTableNameComboBox.blockSignals(False)
+        self.titleColumnComboBox.blockSignals(False)
+        self.abstractColumnComboBox.blockSignals(False)
+        self.layerSchemaNameComboBox.blockSignals(False)
+        self.layerTableNameComboBox.blockSignals(False)
 
     def on_connection_changed(self):
         self.refresh_schemas()
@@ -103,4 +161,12 @@ class GeoCatConfigDialog(QtGui.QDialog, FORM_CLASS):
         self.layerTableNameComboBox.addItems(cols)
 
     def all_done(self):
-        pass
+        s = QSettings()
+        s.setValue("GeoCat/connection", self.postGisConnectionComboBox.currentText())
+        s.setValue("GeoCat/metadataTableSchema", self.metadataTableSchemaComboBox.currentText())
+        s.setValue("GeoCat/metadataTableName", self.metadataTableNameComboBox.currentText())
+        s.setValue("GeoCat/titleColumn", self.titleColumnComboBox.currentText())
+        s.setValue("GeoCat/abstractColumn", self.abstractColumnComboBox.currentText())
+        s.setValue("GeoCat/gisLayerSchemaCol", self.layerSchemaNameComboBox.currentText())
+        s.setValue("GeoCat/gisLayerTableCol", self.layerTableNameComboBox.currentText())
+        self.accept()

@@ -126,22 +126,6 @@
  <connections>
   <connection>
    <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>227</x>
-     <y>222</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>239</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
    <signal>rejected()</signal>
    <receiver>Dialog</receiver>
    <slot>reject()</slot>
@@ -163,8 +147,8 @@
    <slot>on_connection_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>202</x>
-     <y>22</y>
+     <x>223</x>
+     <y>21</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -179,8 +163,8 @@
    <slot>on_metadata_schema_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>202</x>
-     <y>45</y>
+     <x>223</x>
+     <y>44</y>
     </hint>
     <hint type="destinationlabel">
      <x>135</x>
@@ -195,12 +179,28 @@
    <slot>on_metadata_table_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>203</x>
-     <y>76</y>
+     <x>224</x>
+     <y>75</y>
     </hint>
     <hint type="destinationlabel">
      <x>151</x>
      <y>74</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>all_done()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>262</x>
+     <y>221</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>238</x>
+     <y>202</y>
     </hint>
    </hints>
   </connection>
@@ -209,5 +209,6 @@
   <slot>on_connection_changed()</slot>
   <slot>on_metadata_schema_changed()</slot>
   <slot>on_metadata_table_changed()</slot>
+  <slot>all_done()</slot>
  </slots>
 </ui>
