@@ -36,11 +36,12 @@ from qgis.core import (
     QgsMapLayerRegistry
 )
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'geo_cat_dialog_base.ui'))
+#FORM_CLASS, _ = uic.loadUiType(os.path.join(
+#    os.path.dirname(__file__), 'geo_cat_dialog_base.ui'))
+from geo_cat_dialog_base import Ui_GeoCatDialogBase
 
 
-class GeoCatDialog(QtGui.QDialog, FORM_CLASS):
+class GeoCatDialog(QtGui.QDialog, Ui_GeoCatDialogBase):
     def __init__(self, parent=None):
         """Constructor."""
         super(GeoCatDialog, self).__init__(parent)
