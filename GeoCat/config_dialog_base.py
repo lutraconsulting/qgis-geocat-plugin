@@ -92,7 +92,7 @@ class Ui_Dialog(object):
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
-        Dialog.setWindowTitle(_translate("Dialog", "Geo Cat Configuration", None))
+        Dialog.setWindowTitle(_translate("Dialog", "GeoCat Configuration", None))
         self.postGisConnectionLabel.setText(_translate("Dialog", "PostGIS Connection", None))
         self.MetadataTableSchemaLabel.setText(_translate("Dialog", "Metadata Table Schema", None))
         self.metadataTableNameLabel.setText(_translate("Dialog", "Metadata Table Name", None))

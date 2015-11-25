@@ -93,7 +93,7 @@ class Ui_GeoCatDialogBase(object):
         GeoCatDialogBase.setTabOrder(self.closePushButton, self.helpPushButton)
 
     def retranslateUi(self, GeoCatDialogBase):
-        GeoCatDialogBase.setWindowTitle(_translate("GeoCatDialogBase", "Geo Cat", None))
+        GeoCatDialogBase.setWindowTitle(_translate("GeoCatDialogBase", "GeoCat", None))
         self.descriptionLabel.setText(_translate("GeoCatDialogBase", "Search for a layer based on general term (e.g. bats)", None))
         self.searchPushButton.setText(_translate("GeoCatDialogBase", "Search", None))
         self.resultsLabel.setText(_translate("GeoCatDialogBase", "Results", None))

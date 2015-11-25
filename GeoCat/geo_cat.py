@@ -64,7 +64,7 @@ class GeoCat:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Geo Cat')
+        self.menu = self.tr(u'&GeoCat')
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'GeoCat')
         self.toolbar.setObjectName(u'GeoCat')
@@ -169,7 +169,7 @@ class GeoCat:
             parent=self.iface.mainWindow())
         self.add_action(
             icon_path,
-            text=self.tr(u'Configure Geo Cat'),
+            text=self.tr(u'Configure GeoCat'),
             callback=self.configure,
             parent=self.iface.mainWindow(),
             add_to_toolbar=False)
@@ -179,7 +179,7 @@ class GeoCat:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&Geo Cat'),
+                self.tr(u'&GeoCat'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar

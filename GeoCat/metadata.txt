@@ -7,7 +7,7 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Geo Cat
+name=GeoCat
 qgisMinimumVersion=2.0
 description=Search for PostGIS tables using metadata
 version=0.1
