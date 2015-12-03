@@ -2,7 +2,6 @@
 
 GeoCAT is short name for Geographic Information Systems Catalogue and is a plugin used to search GIS metadata. GeoCAT can be used to search data describing the "who, what, where, when and how" of map layers. GeoCAT was developed on behalf of Dartmoor National Park, UK.
 
-FIXME: Update the image below.
 ![](./Images/geo_cat.png)
 
 GeoCat requires metadata to be stored in a PostgreSQL table with the following minimum information. Table column names need not be exactly the same as those described below. 

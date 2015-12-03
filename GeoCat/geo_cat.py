@@ -65,7 +65,6 @@ class GeoCat:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&GeoCat')
-        # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'GeoCat')
         self.toolbar.setObjectName(u'GeoCat')
 

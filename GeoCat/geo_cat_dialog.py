@@ -63,7 +63,7 @@ class GeoCatDialog(QtGui.QDialog, Ui_GeoCatDialogBase):
         self.config['cat_table'] = '"%s"' % s.value('GeoCat/metadataTableName', '', type=str)
         self.config['title_col'] = '"%s"' % s.value('GeoCat/titleColumn', '', type=str)
         self.config['abstract_col'] = '"%s"' % s.value('GeoCat/abstractColumn', '', type=str)
-        self.config['date_col'] = '"date_published"'  # FIXME
+        self.config['date_col'] = '"date_published"'  # TODO
         self.config['schema_col'] = '"%s"' % s.value('GeoCat/gisLayerSchemaCol', '', type=str)
         self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
 
