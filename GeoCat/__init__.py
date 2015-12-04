@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- GeoCat
+ Layer Metadata Search
                                  A QGIS plugin
  Search for PostGIS tables using metadata
                              -------------------

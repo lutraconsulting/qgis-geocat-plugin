@@ -1,7 +1,7 @@
 Plugin Builder Results
 
-Your plugin GeoCat was created in:
-    C:\Users\Pete\.qgis2\python\plugins\GeoCat
+Your plugin Layer Metadata Search was created in:
+    C:\Users\Pete\.qgis2\python\plugins\LayerMetadataSearch
 
 Your QGIS plugin directory is located at:
     C:/Users/Pete/.qgis2/python/plugins

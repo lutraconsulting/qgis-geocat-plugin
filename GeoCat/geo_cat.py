@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- GeoCat
+ Layer Metadata Search
                                  A QGIS plugin
  Search for PostGIS tables using metadata
                               -------------------
@@ -64,9 +64,9 @@ class GeoCat:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&GeoCat')
-        self.toolbar = self.iface.addToolBar(u'GeoCat')
-        self.toolbar.setObjectName(u'GeoCat')
+        self.menu = self.tr(u'&Layer Metadata Search')
+        self.toolbar = self.iface.addToolBar(u'Layer Metadata Search')
+        self.toolbar.setObjectName(u'Layer Metadata Search')
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -81,7 +81,7 @@ class GeoCat:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('GeoCat', message)
+        return QCoreApplication.translate('Layer Metadata Search', message)
 
 
     def add_action(
@@ -168,7 +168,7 @@ class GeoCat:
             parent=self.iface.mainWindow())
         self.add_action(
             icon_path,
-            text=self.tr(u'Configure GeoCat'),
+            text=self.tr(u'Configure Layer Metadata Search'),
             callback=self.configure,
             parent=self.iface.mainWindow(),
             add_to_toolbar=False)
@@ -178,7 +178,7 @@ class GeoCat:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&GeoCat'),
+                self.tr(u'&Layer Metadata Search'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar

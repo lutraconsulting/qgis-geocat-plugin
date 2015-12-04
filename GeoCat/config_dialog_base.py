@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'config_dialog_base.ui'
 #
-# Created: Wed Nov 25 10:29:56 2015
+# Created: Fri Dec 04 17:11:37 2015
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -92,7 +92,7 @@ class Ui_Dialog(object):
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
-        Dialog.setWindowTitle(_translate("Dialog", "GeoCat Configuration", None))
+        Dialog.setWindowTitle(_translate("Dialog", "Layer Metadata Search Configuration", None))
         self.postGisConnectionLabel.setText(_translate("Dialog", "PostGIS Connection", None))
         self.MetadataTableSchemaLabel.setText(_translate("Dialog", "Metadata Table Schema", None))
         self.metadataTableNameLabel.setText(_translate("Dialog", "Metadata Table Name", None))

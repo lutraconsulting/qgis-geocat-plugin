@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'geo_cat_dialog_base.ui'
 #
-# Created: Wed Nov 25 10:29:25 2015
+# Created: Fri Dec 04 17:11:53 2015
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -93,7 +93,7 @@ class Ui_GeoCatDialogBase(object):
         GeoCatDialogBase.setTabOrder(self.closePushButton, self.helpPushButton)
 
     def retranslateUi(self, GeoCatDialogBase):
-        GeoCatDialogBase.setWindowTitle(_translate("GeoCatDialogBase", "GeoCat", None))
+        GeoCatDialogBase.setWindowTitle(_translate("GeoCatDialogBase", "Layer Metadata Search", None))
         self.descriptionLabel.setText(_translate("GeoCatDialogBase", "Search for a layer based on general term (e.g. bats)", None))
         self.searchPushButton.setText(_translate("GeoCatDialogBase", "Search", None))
         self.resultsLabel.setText(_translate("GeoCatDialogBase", "Results", None))

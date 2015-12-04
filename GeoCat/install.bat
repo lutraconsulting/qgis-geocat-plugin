@@ -1,7 +1,7 @@
 @echo off
 
 rem /***************************************************************************
-rem  GeoCat
+rem  Layer Metadata Search
 rem                                  A QGIS plugin
 rem  Search for PostGIS tables using metadata.
 rem                              -------------------
@@ -20,7 +20,7 @@ rem  *   (at your option) any later version.                                   *
 rem  *                                                                         *
 rem  ***************************************************************************/
 
-SET DEST=%HOMEPATH%\.qgis2\python\plugins\GeoCat
+SET DEST=%HOMEPATH%\.qgis2\python\plugins\LayerMetadataSearch
 mkdir %DEST%
 xcopy /e /y *.py %DEST%
 xcopy /e /y *.png %DEST%

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Geo Cat Configuration</string>
+   <string>Layer Metadata Search Configuration</string>
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">
