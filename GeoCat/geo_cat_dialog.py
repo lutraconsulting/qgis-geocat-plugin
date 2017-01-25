@@ -21,9 +21,20 @@
  ***************************************************************************/
 """
 
-import os
-
-from PyQt4 import QtGui, uic
+# noinspection PyPackageRequirements
+from PyQt4.QtGui import (
+    QDialog,
+    QLabel,
+    QPushButton,
+    QLineEdit,
+    QCheckBox,
+    QRadioButton,
+    QComboBox,
+    QSpinBox,
+    QDoubleSpinBox,
+    QDateEdit,
+    QDesktopServices
+)
 from PyQt4.QtCore import QUrl, QSettings
 from dbutils import (
     get_postgres_conn_info,
@@ -35,26 +46,46 @@ from qgis.core import (
     QgsVectorLayer,
     QgsMapLayerRegistry
 )
-
-#FORM_CLASS, _ = uic.loadUiType(os.path.join(
-#    os.path.dirname(__file__), 'geo_cat_dialog_base.ui'))
-from geo_cat_dialog_base import Ui_GeoCatDialogBase
+from .gc_utils import load_ui
 
 
-class GeoCatDialog(QtGui.QDialog, Ui_GeoCatDialogBase):
+FORM_CLASS = load_ui('geo_cat_dialog_base')
+
+
+class GeoCatDialog(QDialog, FORM_CLASS):
     def __init__(self, parent=None):
-        """Constructor."""
-        super(GeoCatDialog, self).__init__(parent)
-        # Set up the user interface from Designer.
-        # After setupUI you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-connect
+        QDialog.__init__(self, parent)
         self.setupUi(self)
-
         self.config = dict()
         self._setup_config()
+        self.setup_custom_widgets()
         self.search_results = []
+
+        # signals
+        self.searchPushButton.clicked.connect(self.search)
+        self.searchLineEdit.returnPressed.connect(self.search)
+        self.resultsListWidget.currentRowChanged.connect(self.display_details)
+        self.resultsListWidget.itemSelectionChanged.connect(self.on_result_sel_changed)
+        self.helpPushButton.clicked.connect(self.show_help)
+        self.closePushButton.clicked.connect(self.reject)
+        self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
+
+    def setup_custom_widgets(self):
+        # hardcoded for the time being - later we will get them from QSettings
+        self.cust_cols = {
+            'Keywords': {
+                'col_name': 'keywords', 'widget': QLineEdit
+            },
+            'Modification date': {
+                'col_name': 'mod_date', 'widget': QDateEdit
+            }
+        }
+        # create widgets for custom columns
+        for desc, data in self.cust_cols.iteritems():
+            label = QLabel(desc)
+            self.customColsLayout.addWidget(label)
+            w = data['widget']()
+            self.customColsLayout.addWidget(w)
 
     def _setup_config(self):
         s = QSettings()
@@ -74,7 +105,7 @@ class GeoCatDialog(QtGui.QDialog, Ui_GeoCatDialogBase):
 
     def show_help(self):
         help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
-        QtGui.QDesktopServices.openUrl(QUrl(help_url))
+        QDesktopServices.openUrl(QUrl(help_url))
 
     def search(self):
         """
@@ -171,27 +202,18 @@ class GeoCatDialog(QtGui.QDialog, Ui_GeoCatDialogBase):
 
     def display_details(self, current_row):
         """
-            When a result is selected, display its details in the panel to the right.
+            When a result is selected, display its details in the widgets to the right.
 
         :param current_row: The index of the selection
         :return:
         """
-
-        self.detailsPlainTextEdit.clear()
         if current_row < 0:
             return
-
+        # required columns
         title = self.search_results[current_row]['title']
-        # date = self.search_results[current_row]['date']
+        self.title_ledit.setText(title)
         abstract = self.search_results[current_row]['abstract']
-
-        details_text = ''
-        details_text += 'Title: %s\n\n' % title
-        # details_text += 'Date: %s\n\n' % date
-
-        details_text += 'Abstract: %s' % abstract
-
-        self.detailsPlainTextEdit.appendPlainText(details_text)
+        self.abstract_ledit.setText(abstract)
 
     def on_result_sel_changed(self):
         # Determine if we have a selection, if so, enable the add features button

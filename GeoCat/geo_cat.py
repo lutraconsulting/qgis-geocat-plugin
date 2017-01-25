@@ -22,12 +22,10 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
 from PyQt4.QtGui import QAction, QIcon
-# Initialize Qt resources from file resources.py
-import resources_rc
-# Import the code for the dialog
 from geo_cat_dialog import GeoCatDialog
 from geo_cat_config_dialog import GeoCatConfigDialog
 import os.path
+from gc_utils import resources_path
 
 
 class GeoCat:
@@ -159,20 +157,17 @@ class GeoCat:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
-        icon_path = ':/plugins/GeoCat/icon.png'
         self.add_action(
-            icon_path,
+            resources_path('cat_dialog.png'),
             text=self.tr(u'Search For Tables Using Metadata'),
             callback=self.run,
             parent=self.iface.mainWindow())
         self.add_action(
-            icon_path,
+            resources_path('cat_config.png'),
             text=self.tr(u'Configure Layer Metadata Search'),
             callback=self.configure,
             parent=self.iface.mainWindow(),
-            add_to_toolbar=False)
-
+            add_to_toolbar=True)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -183,7 +178,6 @@ class GeoCat:
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
-
 
     def run(self):
         """Run method that performs all the real work"""

@@ -23,8 +23,19 @@
 
 import os
 
-from PyQt4 import QtGui, uic
-from PyQt4.QtCore import QUrl, QSettings
+# noinspection PyPackageRequirements
+from PyQt4.QtGui import (
+    QDialog,
+    QPushButton,
+    QLineEdit,
+    QCheckBox,
+    QRadioButton,
+    QComboBox,
+    QSpinBox,
+    QDoubleSpinBox,
+    QDateEdit
+)
+from PyQt4.QtCore import QSettings
 from dbutils import (
     get_postgres_connections,
     get_postgres_conn_info,
@@ -33,30 +44,28 @@ from dbutils import (
     list_tables,
     list_columns
 )
-
-from qgis.core import (
-    QgsDataSourceURI,
-    QgsVectorLayer,
-    QgsMapLayerRegistry
-)
-
-#FORM_CLASS, _ = uic.loadUiType(os.path.join(
-#    os.path.dirname(__file__), 'config_dialog_base.ui'))
-from config_dialog_base import Ui_Dialog
+from .gc_utils import load_ui
 
 
-class GeoCatConfigDialog(QtGui.QDialog, Ui_Dialog):
+FORM_CLASS = load_ui('config_dialog_base')
+
+
+class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def __init__(self, parent=None):
         """Constructor."""
-        super(GeoCatConfigDialog, self).__init__(parent)
-        # Set up the user interface from Designer.
-        # After setupUI you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-connect
+        QDialog.__init__(self, parent)
         self.setupUi(self)
 
+        # signals
+        self.postGisConnectionComboBox.currentIndexChanged.connect(self.on_connection_changed)
+        self.metadataTableSchemaComboBox.currentIndexChanged.connect(self.on_metadata_schema_changed)
+        self.metadataTableNameComboBox.currentIndexChanged.connect(self.on_metadata_table_changed)
+        self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox.accepted.connect(self.all_done)
+
+        # TODO: if a defined connection is broken in any way,
+        # this will raise an exception here
         self.postGisConnectionComboBox.addItems(get_postgres_connections())
 
         # See if we can put back the old config
@@ -70,13 +79,7 @@ class GeoCatConfigDialog(QtGui.QDialog, Ui_Dialog):
         req_lay_sch = s.value('GeoCat/gisLayerSchemaCol', '', type=str)
         req_lay_tab = s.value('GeoCat/gisLayerTableCol', '', type=str)
 
-        self.postGisConnectionComboBox.blockSignals(True)
-        self.metadataTableSchemaComboBox.blockSignals(True)
-        self.metadataTableNameComboBox.blockSignals(True)
-        self.titleColumnComboBox.blockSignals(True)
-        self.abstractColumnComboBox.blockSignals(True)
-        self.layerSchemaNameComboBox.blockSignals(True)
-        self.layerTableNameComboBox.blockSignals(True)
+        self.block_widgets_signals(class_list=[QComboBox])
 
         self.postGisConnectionComboBox.setCurrentIndex(
             self.postGisConnectionComboBox.findText(req_con)
@@ -111,13 +114,7 @@ class GeoCatConfigDialog(QtGui.QDialog, Ui_Dialog):
                 self.layerTableNameComboBox.findText(req_lay_tab)
             )
 
-        self.postGisConnectionComboBox.blockSignals(False)
-        self.metadataTableSchemaComboBox.blockSignals(False)
-        self.metadataTableNameComboBox.blockSignals(False)
-        self.titleColumnComboBox.blockSignals(False)
-        self.abstractColumnComboBox.blockSignals(False)
-        self.layerSchemaNameComboBox.blockSignals(False)
-        self.layerTableNameComboBox.blockSignals(False)
+            self.block_widgets_signals(block=False, class_list=[QComboBox])
 
     def on_connection_changed(self):
         self.refresh_schemas()
@@ -173,3 +170,9 @@ class GeoCatConfigDialog(QtGui.QDialog, Ui_Dialog):
         s.setValue("GeoCat/gisLayerSchemaCol", self.layerSchemaNameComboBox.currentText())
         s.setValue("GeoCat/gisLayerTableCol", self.layerTableNameComboBox.currentText())
         self.accept()
+
+
+    def block_widgets_signals(self, block=True, class_list=[]):
+        for cl in class_list:
+            for w in self.findChildren(cl):
+                w.blockSignals(block)
