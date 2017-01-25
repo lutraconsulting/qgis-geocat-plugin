@@ -32,7 +32,6 @@ import qgis  # pylint: disable=unused-import
 
 def load_ui(name):
     ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', name + '.ui')
-    print ui_file
     return uic.loadUiType(ui_file)[0]
 
 

@@ -21,26 +21,21 @@
  ***************************************************************************/
 """
 
+from psycopg2.extras import DictCursor
 # noinspection PyPackageRequirements
 from PyQt4.QtGui import (
     QDialog,
     QLabel,
-    QPushButton,
     QLineEdit,
-    QCheckBox,
-    QRadioButton,
-    QComboBox,
-    QSpinBox,
-    QDoubleSpinBox,
+    QTextEdit,
     QDateEdit,
     QDesktopServices
 )
-from PyQt4.QtCore import QUrl, QSettings
+from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
 from dbutils import (
     get_postgres_conn_info,
     get_connection
 )
-
 from qgis.core import (
     QgsDataSourceURI,
     QgsVectorLayer,
@@ -85,6 +80,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             label = QLabel(desc)
             self.customColsLayout.addWidget(label)
             w = data['widget']()
+            w.setObjectName(data['col_name'])
+            w.setReadOnly(True)
             self.customColsLayout.addWidget(w)
 
     def _setup_config(self):
@@ -101,7 +98,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
     def _db_cur(self):
         con_info = get_postgres_conn_info(self.config['connection'])
         con = get_connection(con_info)
-        return con.cursor()
+        return con.cursor(cursor_factory=DictCursor)
 
     def show_help(self):
         help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
@@ -119,7 +116,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         :return:
         """
-
         # import pydevd; pydevd.settrace('localhost', port=5678)
 
         cur = self._db_cur()
@@ -132,34 +128,53 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         wildcarded_search_string += '%'
         query_dict = {'search_text': wildcarded_search_string}
 
-        cur.execute(""" SELECT
-                            cat.""" + self.config['title_col'] + """,
-                            cat.""" + self.config['abstract_col'] + """,
-                            -- cat.""" + self.config['date_col'] + """,
-                            cat.""" + self.config['schema_col'] + """,
-                            cat.""" + self.config['table_col'] + """,
-                            gc.f_geometry_column,
-                            gc.type
-                        FROM
-                            """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
-                            public.geometry_columns AS gc
-                        WHERE
-                            (
-                                cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
-                                cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
-                            ) AND
-                            cat.""" + self.config['schema_col'] + """ IS NOT NULL AND
-                            cat.""" + self.config['table_col'] + """ IS NOT NULL AND
-                            -- Join conditions:
-                            cat.""" + self.config['schema_col'] + """ = gc.f_table_schema AND
-                            cat.""" + self.config['table_col'] + """ = gc.f_table_name""", query_dict)
+        # parts of the QUERY for custom columns
+        cc_select = ''
+        cc_where = ''
+        for desc, data in self.cust_cols.iteritems():
+            if data['widget'] == QDateEdit:
+                cc_select += ",\nto_char(cat.{}, 'YYYY-MM-DD') AS {}".format(data['col_name'], data['col_name'])
+                cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(data['col_name'])
+            else:
+                cc_select += ',\ncat.{}'.format(data['col_name'])
+                cc_where += '\nOR cat.{} ILIKE %(search_text)s'.format(data['col_name'])
+
+        qry = """
+            SELECT
+                cat.""" + self.config['title_col'] + """,
+                cat.""" + self.config['abstract_col'] + """,
+                -- cat.""" + self.config['date_col'] + """,
+                cat.""" + self.config['schema_col'] + """,
+                cat.""" + self.config['table_col'] + """,
+                gc.f_geometry_column,
+                gc.type""" + cc_select + """
+            FROM
+                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
+                public.geometry_columns AS gc
+            WHERE
+                (
+                    cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                    cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                    """ + cc_where + """
+                ) AND
+                cat.""" + self.config['schema_col'] + """ IS NOT NULL AND
+                cat.""" + self.config['table_col'] + """ IS NOT NULL AND
+                -- Join conditions:
+                cat.""" + self.config['schema_col'] + """ = gc.f_table_schema AND
+                cat.""" + self.config['table_col'] + """ = gc.f_table_name"""
+
+        cur.execute(qry, query_dict)
 
         # Clear the results
         self.search_results = []
         self.resultsListWidget.clear()
 
-        for title, abstract, schema, table, geom_col, ty in cur.fetchall():
+        for row in cur.fetchall():
             res = dict()
+            title, abstract, schema, table, geom_col, ty = row[:6]
+            for desc, data in self.cust_cols.iteritems():
+                cc_name = data['col_name']
+                res[cc_name] = row[cc_name]
             if title is None:
                 title = 'Untitled'
             res['title'] = title
@@ -180,7 +195,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             Add each of the selected layers to QGIS.
         :return:
         """
-
         for i in range(self.resultsListWidget.count()):
             # Loop through and add selected items
             if self.resultsListWidget.item(i).isSelected():
@@ -214,6 +228,17 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.title_ledit.setText(title)
         abstract = self.search_results[current_row]['abstract']
         self.abstract_ledit.setText(abstract)
+
+        # custom columns
+        for desc, data in self.cust_cols.iteritems():
+            cc_name = data['col_name']
+            wid = self.findChild(data['widget'], cc_name)
+            val = self.search_results[current_row][cc_name]
+            if data['widget'] in [QLineEdit, QTextEdit]:
+                wid.setText(val)
+            elif data['widget'] == QDateEdit:
+                date = QDate.fromString(val,Qt.ISODate)
+                wid.setDate(date)
 
     def on_result_sel_changed(self):
         # Determine if we have a selection, if so, enable the add features button

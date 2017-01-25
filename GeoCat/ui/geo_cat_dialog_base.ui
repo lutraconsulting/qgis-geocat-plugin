@@ -14,7 +14,7 @@
    <string>Layer Metadata Search</string>
   </property>
   <property name="modal">
-   <bool>true</bool>
+   <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -133,7 +133,11 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QLineEdit" name="title_ledit"/>
+            <widget class="QLineEdit" name="title_ledit">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label">
@@ -143,7 +147,11 @@
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QTextEdit" name="abstract_ledit"/>
+            <widget class="QTextEdit" name="abstract_ledit">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item row="4" column="0">
             <layout class="QVBoxLayout" name="customColsLayout"/>
