@@ -171,16 +171,19 @@ class GeoCat:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
+        self.dlg.close()
         for action in self.actions:
             self.iface.removePluginMenu(
                 self.tr(u'&Layer Metadata Search'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
-        del self.toolbar
+        del self.dlg, self.toolbar
 
     def run(self):
         """Run method that performs all the real work"""
+        # refresh custom columns widgets
+        self.dlg.setup_custom_widgets()
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop

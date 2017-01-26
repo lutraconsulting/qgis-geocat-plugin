@@ -53,8 +53,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.setupUi(self)
         self.config = dict()
         self._setup_config()
-        self.setup_custom_widgets()
+        self.wclasses = {'QLineEdit': QLineEdit,
+                         'QTextEdit': QTextEdit,
+                         'QDateEdit': QDateEdit}
+        # self.setup_custom_widgets()
         self.search_results = []
+
 
         # signals
         self.searchPushButton.clicked.connect(self.search)
@@ -66,21 +70,26 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
 
     def setup_custom_widgets(self):
-        # hardcoded for the time being - later we will get them from QSettings
-        self.cust_cols = {
-            'Keywords': {
-                'col_name': 'keywords', 'widget': QLineEdit
-            },
-            'Modification date': {
-                'col_name': 'mod_date', 'widget': QDateEdit
-            }
-        }
+        # read custom columns settings
+        self.clear_layout(self.customColsLayout)
+        s = QSettings()
+        s.beginGroup('GeoCat/CustomColumns')
+        self.cust_cols = []
+        for i, cc in enumerate(s.childGroups()):
+            self.cust_cols.insert(i, {})
+            s.beginGroup(cc)
+            self.cust_cols[i]['desc'] = s.value('desc')
+            self.cust_cols[i]['col'] = s.value('col')
+            self.cust_cols[i]['widget'] = s.value('widget', 'QLineEdit')
+            s.endGroup()
+
         # create widgets for custom columns
-        for desc, data in self.cust_cols.iteritems():
-            label = QLabel(desc)
+        for i, c in enumerate(self.cust_cols):
+            col_name = c['col']
+            label = QLabel(c['desc'])
             self.customColsLayout.addWidget(label)
-            w = data['widget']()
-            w.setObjectName(data['col_name'])
+            w = self.wclasses[c['widget']]()
+            w.setObjectName('{}_{}'.format(col_name, i))
             w.setReadOnly(True)
             self.customColsLayout.addWidget(w)
 
@@ -131,13 +140,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         # parts of the QUERY for custom columns
         cc_select = ''
         cc_where = ''
-        for desc, data in self.cust_cols.iteritems():
-            if data['widget'] == QDateEdit:
-                cc_select += ",\nto_char(cat.{}, 'YYYY-MM-DD') AS {}".format(data['col_name'], data['col_name'])
-                cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(data['col_name'])
+        for c in self.cust_cols:
+            col_name = c['col']
+            if c['widget'] == 'QDateEdit':
+                cc_select += ",\nto_char(cat.{}, 'YYYY-MM-DD') AS {}".format(col_name, col_name)
+                cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
             else:
-                cc_select += ',\ncat.{}'.format(data['col_name'])
-                cc_where += '\nOR cat.{} ILIKE %(search_text)s'.format(data['col_name'])
+                cc_select += ',\ncat.{}'.format(col_name)
+                cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
 
         qry = """
             SELECT
@@ -172,9 +182,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         for row in cur.fetchall():
             res = dict()
             title, abstract, schema, table, geom_col, ty = row[:6]
-            for desc, data in self.cust_cols.iteritems():
-                cc_name = data['col_name']
-                res[cc_name] = row[cc_name]
+            for c in self.cust_cols:
+                col_name = c['col']
+                res[col_name] = row[col_name]
             if title is None:
                 title = 'Untitled'
             res['title'] = title
@@ -230,13 +240,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.abstract_ledit.setText(abstract)
 
         # custom columns
-        for desc, data in self.cust_cols.iteritems():
-            cc_name = data['col_name']
-            wid = self.findChild(data['widget'], cc_name)
-            val = self.search_results[current_row][cc_name]
-            if data['widget'] in [QLineEdit, QTextEdit]:
-                wid.setText(val)
-            elif data['widget'] == QDateEdit:
+        for i, c in enumerate(self.cust_cols):
+            col_name = c['col']
+            wid = self.findChild(self.wclasses[c['widget']], '{}_{}'.format(col_name, i))
+            val = self.search_results[current_row][col_name]
+            if c['widget'] in ['QLineEdit', 'QTextEdit']:
+                str_val = str(val)
+                wid.setText(str_val)
+            elif c['widget'] == 'QDateEdit':
                 date = QDate.fromString(val,Qt.ISODate)
                 wid.setDate(date)
 
@@ -246,3 +257,11 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.addSelectedPushButton.setEnabled(True)
         else:
             self.addSelectedPushButton.setEnabled(False)
+
+    def clear_layout(self, layout):
+        for i in reversed(range(layout.count())):
+            widgetToRemove = layout.itemAt(i).widget()
+            # remove it from the layout list
+            layout.removeWidget(widgetToRemove)
+            # remove it from the gui
+            widgetToRemove.setParent(None)

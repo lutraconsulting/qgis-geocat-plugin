@@ -2,37 +2,92 @@
 <ui version="4.0">
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
+  <property name="windowModality">
+   <enum>Qt::NonModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>578</width>
-    <height>490</height>
+    <width>598</width>
+    <height>522</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Layer Metadata Search Configuration</string>
   </property>
+  <property name="modal">
+   <bool>false</bool>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0">
-    <widget class="QLabel" name="MetadataTableSchemaLabel">
-     <property name="text">
-      <string>Metadata Table Schema</string>
+   <item row="11" column="1">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QComboBox" name="postGisConnectionComboBox">
-     <property name="maximumSize">
+     <property name="sizeHint" stdset="0">
       <size>
-       <width>1024</width>
-       <height>16777215</height>
+       <width>20</width>
+       <height>8</height>
       </size>
      </property>
+    </spacer>
+   </item>
+   <item row="12" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
     </widget>
    </item>
-   <item row="1" column="1">
-    <widget class="QComboBox" name="metadataTableSchemaComboBox"/>
+   <item row="0" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Metadata table</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QLabel" name="postGisConnectionLabel">
+        <property name="text">
+         <string>PostGIS Connection</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="postGisConnectionComboBox">
+        <property name="maximumSize">
+         <size>
+          <width>1024</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="MetadataTableSchemaLabel">
+        <property name="text">
+         <string>Schema</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="metadataTableSchemaComboBox"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="metadataTableNameLabel">
+        <property name="text">
+         <string>Table name</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="metadataTableNameComboBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item row="3" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox">
@@ -83,46 +138,6 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="postGisConnectionLabel">
-     <property name="text">
-      <string>PostGIS Connection</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="metadataTableNameLabel">
-     <property name="text">
-      <string>Metadata Table Name</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QComboBox" name="metadataTableNameComboBox"/>
-   </item>
-   <item row="12" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="11" column="1">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>8</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
    <item row="9" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
@@ -148,16 +163,22 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QToolButton" name="addCustomColumnBtn">
+          <property name="toolTip">
+           <string>Add Custom Column</string>
+          </property>
           <property name="text">
-           <string>Add new column</string>
+           <string>+</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="addCustomColumnBtn">
+         <widget class="QToolButton" name="removeCustomColumnBtn">
+          <property name="toolTip">
+           <string>Remove Custom Column</string>
+          </property>
           <property name="text">
-           <string>+</string>
+           <string>-</string>
           </property>
          </widget>
         </item>
@@ -175,65 +196,51 @@
          <property name="margin">
           <number>0</number>
          </property>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_3">
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_4">
            <property name="text">
-            <string>Column</string>
+            <string>Widget type</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
            </property>
           </widget>
+         </item>
+         <item row="1" column="0" colspan="3">
+          <layout class="QVBoxLayout" name="customColsLayout">
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+          </layout>
          </item>
          <item row="0" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
             <string>Description</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QComboBox" name="comboBox"/>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLineEdit" name="lineEdit"/>
-         </item>
-         <item row="1" column="2">
-          <widget class="QComboBox" name="comboBox_2">
-           <item>
-            <property name="text">
-             <string>LineEdit (single line)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>TextEdit (multiline)</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Date</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_4">
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>Widget type</string>
+            <string>Column</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
         </layout>
        </widget>
       </item>
-      <item row="0" column="0">
-       <layout class="QVBoxLayout" name="customColsLayout"/>
-      </item>
      </layout>
     </widget>
    </item>
   </layout>
  </widget>
- <connections>
- </connections>
- <slots>
- </slots>
+ <resources/>
+ <connections/>
 </ui>
