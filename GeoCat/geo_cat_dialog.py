@@ -22,6 +22,7 @@
 """
 
 from psycopg2.extras import DictCursor
+import traceback
 # noinspection PyPackageRequirements
 from PyQt4.QtGui import (
     QDialog,
@@ -39,8 +40,10 @@ from dbutils import (
 from qgis.core import (
     QgsDataSourceURI,
     QgsVectorLayer,
-    QgsMapLayerRegistry
+    QgsMapLayerRegistry,
+    QgsMessageLog
 )
+from qgis.gui import QgsMessageBar
 from .gc_utils import load_ui
 
 
@@ -48,9 +51,10 @@ FORM_CLASS = load_ui('geo_cat_dialog_base')
 
 
 class GeoCatDialog(QDialog, FORM_CLASS):
-    def __init__(self, parent=None):
+    def __init__(self, iface, parent=None):
         QDialog.__init__(self, parent)
         self.setupUi(self)
+        self.iface = iface
         self.config = dict()
         self._setup_config()
         self.wclasses = {'QLineEdit': QLineEdit,
@@ -58,7 +62,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                          'QDateEdit': QDateEdit}
         # self.setup_custom_widgets()
         self.search_results = []
-
 
         # signals
         self.searchPushButton.clicked.connect(self.search)
@@ -143,11 +146,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         for c in self.cust_cols:
             col_name = c['col']
             if c['widget'] == 'QDateEdit':
+                # we assume, that if the widget for current custom column is QDateEdit
+                # the column must be of type date
+                # We could also check the type explicitly
                 cc_select += ",\nto_char(cat.{}, 'YYYY-MM-DD') AS {}".format(col_name, col_name)
-                cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
             else:
                 cc_select += ',\ncat.{}'.format(col_name)
-                cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
+            cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
 
         qry = """
             SELECT
@@ -172,8 +177,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 -- Join conditions:
                 cat.""" + self.config['schema_col'] + """ = gc.f_table_schema AND
                 cat.""" + self.config['table_col'] + """ = gc.f_table_name"""
-
-        cur.execute(qry, query_dict)
+        try:
+            cur.execute(qry, query_dict)
+        except Exception:
+            self.bar_warn('Querying the metadata table failed! See logs and check your settings.')
+            self.log_info(traceback.format_exc())
+            self.search_results = []
+            return
 
         # Clear the results
         self.search_results = []
@@ -265,3 +275,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             layout.removeWidget(widgetToRemove)
             # remove it from the gui
             widgetToRemove.setParent(None)
+
+    def log_info(self, msg):
+        try:
+            QgsMessageLog.logMessage(msg, 'Layer Metadata Search', QgsMessageLog.INFO)
+        except TypeError:
+            QgsMessageLog.logMessage(repr(msg), 'Layer Metadata Search', QgsMessageLog.INFO)
+
+    def bar_warn(self, msg, dur=5):
+        self.iface.messageBar().pushMessage('Layer Metadata Search', msg, level=QgsMessageBar.WARNING, duration=dur)

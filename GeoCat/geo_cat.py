@@ -58,7 +58,7 @@ class GeoCat:
                 QCoreApplication.installTranslator(self.translator)
 
         # Create the dialog (after translation) and keep reference
-        self.dlg = GeoCatDialog()
+        self.dlg = GeoCatDialog(iface)
 
         # Declare instance attributes
         self.actions = []
@@ -167,7 +167,7 @@ class GeoCat:
             text=self.tr(u'Configure Layer Metadata Search'),
             callback=self.configure,
             parent=self.iface.mainWindow(),
-            add_to_toolbar=True)
+            add_to_toolbar=False)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -184,6 +184,10 @@ class GeoCat:
         """Run method that performs all the real work"""
         # refresh custom columns widgets
         self.dlg.setup_custom_widgets()
+        # is there any layer selected
+        if self.dlg.resultsListWidget.selectedItems():
+            cur_row = self.dlg.resultsListWidget.currentRow()
+            self.dlg.display_details(cur_row)
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
