@@ -23,6 +23,7 @@
 
 from psycopg2.extras import DictCursor
 import traceback
+import datetime
 # noinspection PyPackageRequirements
 from PyQt4.QtGui import (
     QDialog,
@@ -66,6 +67,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         # signals
         self.searchPushButton.clicked.connect(self.search)
         self.searchLineEdit.returnPressed.connect(self.search)
+        self.resultsListWidget.doubleClicked.connect(self.add_selected_layers)
         self.resultsListWidget.currentRowChanged.connect(self.display_details)
         self.resultsListWidget.itemSelectionChanged.connect(self.on_result_sel_changed)
         self.helpPushButton.clicked.connect(self.show_help)
@@ -134,6 +136,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         search_text = self.searchLineEdit.text()
 
+        if search_text.strip() == '':
+            self.search_results = []
+            self.resultsListWidget.clear()
+            self.clear_details()
+            return
+
         wildcarded_search_string = ''
         for part in search_text.split():
             wildcarded_search_string += '%' + part
@@ -145,10 +153,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         cc_where = ''
         for c in self.cust_cols:
             col_name = c['col']
-            if c['widget'] == 'QDateEdit':
-                # we assume, that if the widget for current custom column is QDateEdit
-                # the column must be of type date
-                # We could also check the type explicitly
+            if not col_name:
+                continue
+            # check the column type
+            if self.get_col_type(col_name) in ['date']:
                 cc_select += ",\nto_char(cat.{}, 'YYYY-MM-DD') AS {}".format(col_name, col_name)
             else:
                 cc_select += ',\ncat.{}'.format(col_name)
@@ -210,6 +218,19 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 display_geom = display_geom[5:]
             self.resultsListWidget.addItem('%s (%s)' % (title, display_geom))
 
+    def get_col_type(self, col_name):
+        cur = self._db_cur()
+        qry = '''SELECT data_type FROM information_schema.columns
+                        WHERE table_schema = '{}' AND
+                        table_name = '{}' AND
+                        column_name = '{}';'''.format(
+            self.config['cat_schema'].replace('\"', ''),
+            self.config['cat_table'].replace('\"', ''),
+            col_name
+        )
+        cur.execute(qry)
+        return cur.fetchone()[0]
+
     def add_selected_layers(self):
         """
             Add each of the selected layers to QGIS.
@@ -227,10 +248,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                                   con_info['user'],
                                   con_info['password'])
                 res = self.search_results[i]
+                display_geom = res['geom_type'].lower()
+                if display_geom.startswith('multi'):
+                    display_geom = display_geom[5:]
                 uri.setDataSource(res['schema'],
                                   res['table'],
                                   res['geom_col'])
-                layer_name = '%s (%s)' % (res['title'], res['geom_type'].lower())
+                layer_name = '%s (%s)' % (res['title'], display_geom)
                 vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
                 QgsMapLayerRegistry.instance().addMapLayer(vlayer)
 
@@ -258,8 +282,21 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 str_val = str(val)
                 wid.setText(str_val)
             elif c['widget'] == 'QDateEdit':
+                if isinstance(val, datetime.datetime):
+                    val = val.strftime('%Y-%m-%d')
                 date = QDate.fromString(val,Qt.ISODate)
                 wid.setDate(date)
+
+    def clear_details(self):
+        # required columns
+        self.title_ledit.clear()
+        self.abstract_ledit.clear()
+
+        # custom columns
+        for i, c in enumerate(self.cust_cols):
+            col_name = c['col']
+            wid = self.findChild(self.wclasses[c['widget']], '{}_{}'.format(col_name, i))
+            wid.clear()
 
     def on_result_sel_changed(self):
         # Determine if we have a selection, if so, enable the add features button

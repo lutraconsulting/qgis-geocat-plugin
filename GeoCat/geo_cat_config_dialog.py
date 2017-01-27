@@ -135,6 +135,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         return cur
 
     def add_custom_column(self):
+        self.set_custom_columns_settings()
         s = QSettings()
         s.beginGroup('GeoCat/CustomColumns')
         cc_nr = str(len(s.childGroups()))
@@ -153,6 +154,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def get_custom_columns(self):
         self.clear_layout(self.customColsLayout)
+        self.removeCustomColumnBtn.setDisabled(True)
         cur = self._get_cur()
         cols = list_columns(cur,
                             self.metadataTableSchemaComboBox.currentText(),
@@ -166,6 +168,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s.beginGroup('GeoCat/CustomColumns')
         self.cust_cols = []
         for i, cc in enumerate(s.childGroups()):
+            self.removeCustomColumnBtn.setEnabled(True)
             self.cust_cols.insert(i, {})
             s.beginGroup(cc)
             desc = s.value('desc')

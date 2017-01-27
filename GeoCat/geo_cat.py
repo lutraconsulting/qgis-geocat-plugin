@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
+from PyQt4.QtCore import Qt, QSettings, QTranslator, qVersion, QCoreApplication
 from PyQt4.QtGui import QAction, QIcon
 from geo_cat_dialog import GeoCatDialog
 from geo_cat_config_dialog import GeoCatConfigDialog
@@ -59,6 +59,9 @@ class GeoCat:
 
         # Create the dialog (after translation) and keep reference
         self.dlg = GeoCatDialog(iface)
+        self.dlg.setWindowFlags(self.dlg.windowFlags() |
+                       Qt.WindowSystemMenuHint |
+                       Qt.WindowMinMaxButtonsHint)
 
         # Declare instance attributes
         self.actions = []
@@ -184,10 +187,10 @@ class GeoCat:
         """Run method that performs all the real work"""
         # refresh custom columns widgets
         self.dlg.setup_custom_widgets()
-        # is there any layer selected
-        if self.dlg.resultsListWidget.selectedItems():
-            cur_row = self.dlg.resultsListWidget.currentRow()
-            self.dlg.display_details(cur_row)
+        # clear any previuos search text and results
+        self.dlg.searchLineEdit.clear()
+        self.dlg.resultsListWidget.clear()
+        self.dlg.clear_details()
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
