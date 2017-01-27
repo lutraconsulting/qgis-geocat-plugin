@@ -105,12 +105,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['cat_table'] = '"%s"' % s.value('GeoCat/metadataTableName', '', type=str)
         self.config['title_col'] = '"%s"' % s.value('GeoCat/titleColumn', '', type=str)
         self.config['abstract_col'] = '"%s"' % s.value('GeoCat/abstractColumn', '', type=str)
-        self.config['date_col'] = '"date_published"'  # TODO
         self.config['schema_col'] = '"%s"' % s.value('GeoCat/gisLayerSchemaCol', '', type=str)
         self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
 
     def _db_cur(self):
         con_info = get_postgres_conn_info(self.config['connection'])
+        if not self.config['connection']:
+            return None
         con = get_connection(con_info)
         return con.cursor(cursor_factory=DictCursor)
 
@@ -133,6 +134,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         # import pydevd; pydevd.settrace('localhost', port=5678)
 
         cur = self._db_cur()
+        if not cur:
+            self.bar_warn('There is no connection defined.')
+            return
 
         search_text = self.searchLineEdit.text()
 
@@ -166,7 +170,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             SELECT
                 cat.""" + self.config['title_col'] + """,
                 cat.""" + self.config['abstract_col'] + """,
-                -- cat.""" + self.config['date_col'] + """,
                 cat.""" + self.config['schema_col'] + """,
                 cat.""" + self.config['table_col'] + """,
                 gc.f_geometry_column,

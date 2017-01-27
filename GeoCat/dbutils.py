@@ -58,8 +58,9 @@ def get_postgres_conn_info(selected):
         return {}
 
     conn_info = {}
+    conn_info['dsn'] = None
     conn_info["host"] = settings.value("host", "", type=str)
-    conn_info["port"] = settings.value("port", 432, type=int)
+    conn_info["port"] = settings.value("port", 5432, type=int)
     conn_info["database"] = settings.value("database", "", type=str)
     username = settings.value("username", "", type=str)
     password = settings.value("password", "", type=str)

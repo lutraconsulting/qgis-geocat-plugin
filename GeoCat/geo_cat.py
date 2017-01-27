@@ -185,6 +185,7 @@ class GeoCat:
 
     def run(self):
         """Run method that performs all the real work"""
+        self.dlg._setup_config()
         # refresh custom columns widgets
         self.dlg.setup_custom_widgets()
         # clear any previuos search text and results
