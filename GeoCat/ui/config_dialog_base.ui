@@ -163,6 +163,12 @@
         </item>
         <item>
          <widget class="QToolButton" name="addCustomColumnBtn">
+          <property name="minimumSize">
+           <size>
+            <width>30</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="toolTip">
            <string>Add Custom Column</string>
           </property>
@@ -173,6 +179,12 @@
         </item>
         <item>
          <widget class="QToolButton" name="removeCustomColumnBtn">
+          <property name="minimumSize">
+           <size>
+            <width>30</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="toolTip">
            <string>Remove Custom Column</string>
           </property>
