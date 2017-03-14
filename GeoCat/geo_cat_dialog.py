@@ -36,17 +36,17 @@ from PyQt4.QtGui import (
 from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
 from dbutils import (
     get_postgres_conn_info,
-    get_connection
+    get_connection,
+    list_columns
 )
 from qgis.core import (
     QgsDataSourceURI,
     QgsVectorLayer,
-    QgsMapLayerRegistry,
-    QgsMessageLog
+    QgsMapLayerRegistry
 )
-from qgis.gui import QgsMessageBar
 from .gc_utils import load_ui
-
+from errors import CustomColumnException, ConnectionException
+from user_communication import UserCommunication
 
 FORM_CLASS = load_ui('geo_cat_dialog_base')
 
@@ -56,12 +56,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         QDialog.__init__(self, parent)
         self.setupUi(self)
         self.iface = iface
+        self.uc = UserCommunication(iface, 'Metadata Plugin')
         self.config = dict()
         self._setup_config()
         self.wclasses = {'QLineEdit': QLineEdit,
                          'QTextEdit': QTextEdit,
                          'QDateEdit': QDateEdit}
-        # self.setup_custom_widgets()
         self.search_results = []
 
         # signals
@@ -75,8 +75,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
 
     def setup_custom_widgets(self):
-        # read custom columns settings
         self.clear_layout(self.customColsLayout)
+        # read custom columns settings
         s = QSettings()
         s.beginGroup('GeoCat/CustomColumns')
         self.cust_cols = []
@@ -89,12 +89,22 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             s.endGroup()
 
         # create widgets for custom columns
+        cur = self._db_cur(dict=False)
+        if not cur:
+            raise ConnectionException
+        cols = list_columns(cur,
+                            (self.config['cat_schema']).strip('"'),
+                            (self.config['cat_table']).strip('"')
+        )
         for i, c in enumerate(self.cust_cols):
-            col_name = c['col']
+            if not c['col'] in cols:
+                raise CustomColumnException('Metadata table has no "{}" column. Check your settings.'.format(c['col']))
+            if not c['desc']:
+                raise CustomColumnException('Custom column has no description. Check your settings.')
             label = QLabel(c['desc'])
             self.customColsLayout.addWidget(label)
             w = self.wclasses[c['widget']]()
-            w.setObjectName('{}_{}'.format(col_name, i))
+            w.setObjectName('{}_{}'.format(c['col'], i))
             w.setReadOnly(True)
             self.customColsLayout.addWidget(w)
 
@@ -108,12 +118,15 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['schema_col'] = '"%s"' % s.value('GeoCat/gisLayerSchemaCol', '', type=str)
         self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
 
-    def _db_cur(self):
+    def _db_cur(self, dict=True):
         con_info = get_postgres_conn_info(self.config['connection'])
         if not self.config['connection']:
             return None
         con = get_connection(con_info)
-        return con.cursor(cursor_factory=DictCursor)
+        if dict:
+            return con.cursor(cursor_factory=DictCursor)
+        else:
+            return con.cursor()
 
     def show_help(self):
         help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
@@ -135,7 +148,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         cur = self._db_cur()
         if not cur:
-            self.bar_warn('There is no connection defined.')
+            self.uc.bar_warn('There is no connection defined.')
             return
 
         search_text = self.searchLineEdit.text()
@@ -191,8 +204,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         try:
             cur.execute(qry, query_dict)
         except Exception:
-            self.bar_warn('Querying the metadata table failed! See logs and check your settings.')
-            self.log_info(traceback.format_exc())
+            self.uc.bar_warn('Querying the metadata table failed! See logs and check your settings.')
+            self.uc.log_info(traceback.format_exc())
             self.search_results = []
             return
 
@@ -315,12 +328,3 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             layout.removeWidget(widgetToRemove)
             # remove it from the gui
             widgetToRemove.setParent(None)
-
-    def log_info(self, msg):
-        try:
-            QgsMessageLog.logMessage(msg, 'Layer Metadata Search', QgsMessageLog.INFO)
-        except TypeError:
-            QgsMessageLog.logMessage(repr(msg), 'Layer Metadata Search', QgsMessageLog.INFO)
-
-    def bar_warn(self, msg, dur=5):
-        self.iface.messageBar().pushMessage('Layer Metadata Search', msg, level=QgsMessageBar.WARNING, duration=dur)
