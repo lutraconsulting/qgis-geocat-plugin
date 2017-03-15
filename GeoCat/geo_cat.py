@@ -26,6 +26,8 @@ from geo_cat_dialog import GeoCatDialog
 from geo_cat_config_dialog import GeoCatConfigDialog
 import os.path
 from gc_utils import resources_path
+from errors import CustomColumnException, ConnectionException
+from user_communication import UserCommunication
 
 
 class GeoCat:
@@ -41,6 +43,7 @@ class GeoCat:
         """
         # Save reference to the QGIS interface
         self.iface = iface
+        self.uc = UserCommunication(iface, 'Metadata Plugin')
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
@@ -187,7 +190,15 @@ class GeoCat:
         """Run method that performs all the real work"""
         self.dlg._setup_config()
         # refresh custom columns widgets
-        self.dlg.setup_custom_widgets()
+        try:
+            self.dlg.setup_custom_widgets()
+        except ConnectionException:
+            self.uc.show_warn('Database connection error. Check your settings!')
+            return
+        except CustomColumnException, e:
+            self.uc.show_warn(e[0])
+            return
+
         # clear any previuos search text and results
         self.dlg.searchLineEdit.clear()
         self.dlg.resultsListWidget.clear()
@@ -205,6 +216,6 @@ class GeoCat:
     def configure(self):
         """Run method that performs all the real work"""
         # show the dialog
-        config_dlg = GeoCatConfigDialog()
+        config_dlg = GeoCatConfigDialog(self.iface)
         # Run the dialog event loop
         config_dlg.exec_()

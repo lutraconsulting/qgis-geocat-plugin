@@ -44,6 +44,8 @@ from dbutils import (
     list_columns
 )
 from .gc_utils import load_ui
+from errors import CustomColumnException
+from user_communication import UserCommunication
 
 
 FORM_CLASS = load_ui('config_dialog_base')
@@ -51,10 +53,12 @@ FORM_CLASS = load_ui('config_dialog_base')
 
 class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
-    def __init__(self, parent=None):
+    def __init__(self, iface, parent=None):
         """Constructor."""
         QDialog.__init__(self, parent)
         self.setupUi(self)
+        self.iface = iface
+        self.uc = UserCommunication(iface, 'Metadata Plugin')
         self.cust_cols = []
 
         # signals
@@ -262,7 +266,32 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.layerTableNameComboBox.clear()
         self.layerTableNameComboBox.addItems(cols)
 
+    def check_custom_cols(self):
+        cur = self._get_cur()
+        cols = list_columns(cur,
+                            self.metadataTableSchemaComboBox.currentText(),
+                            self.metadataTableNameComboBox.currentText())
+        for i, cc in enumerate(self.cust_cols):
+            desc_w = self.findChild(QLineEdit, 'cc_desc_ledit_{}'.format(i))
+            desc = desc_w.text()
+            if not desc:
+                msg = 'Empty description of custom column. Enter a description or remove the custom column.'
+                self.uc.log_info(msg)
+                self.uc.show_warn(msg)
+                raise CustomColumnException
+
+            col_name = self.findChild(QComboBox, 'cc_col_cbo_{}'.format(i)).currentText()
+            if not col_name in cols:
+                msg = 'Metadata table column not set. Make a choice or remove the custom column.'
+                self.uc.log_info(msg)
+                self.uc.show_warn(msg)
+                raise CustomColumnException
+
     def all_done(self):
+        try:
+            self.check_custom_cols()
+        except CustomColumnException:
+            return
         s = QSettings()
         s.setValue("GeoCat/connection", self.postGisConnectionComboBox.currentText())
         s.setValue("GeoCat/metadataTableSchema", self.metadataTableSchemaComboBox.currentText())
@@ -274,7 +303,6 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.set_custom_columns_settings()
 
         self.accept()
-
 
     def block_widgets_signals(self, block=True, class_list=[]):
         for cl in class_list:
