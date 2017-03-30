@@ -63,6 +63,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                          'QTextEdit': QTextEdit,
                          'QDateEdit': QDateEdit}
         self.search_results = []
+        self.cust_cols = None
 
         # signals
         self.searchPushButton.clicked.connect(self.search)
@@ -117,6 +118,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['abstract_col'] = '"%s"' % s.value('GeoCat/abstractColumn', '', type=str)
         self.config['schema_col'] = '"%s"' % s.value('GeoCat/gisLayerSchemaCol', '', type=str)
         self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
+        self.config['type_col'] = '"%s"' % s.value('GeoCat/gisLayerTypeCol', '', type=str)
+        self.config['rpath_col'] = '"%s"' % s.value('GeoCat/gisRasterPathCol', '', type=str)
 
     def _db_cur(self, dict=True):
         con_info = get_postgres_conn_info(self.config['connection'])
@@ -191,6 +194,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
                 public.geometry_columns AS gc
             WHERE
+                cat.""" + self.config['type_col'] + """ = 'vector' AND
                 (
                     cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
                     cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
@@ -221,11 +225,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 res[col_name] = row[col_name]
             if title is None:
                 title = 'Untitled'
+            res['type'] = 'vector'
             res['title'] = title
             res['abstract'] = abstract
-            # res['date'] = date
             res['schema'] = schema
             res['table'] = table
+            res['rpath'] = None
             res['geom_col'] = geom_col
             res['geom_type'] = ty
             self.search_results.append(res)
@@ -233,6 +238,46 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             if display_geom.startswith('multi'):
                 display_geom = display_geom[5:]
             self.resultsListWidget.addItem('%s (%s)' % (title, display_geom))
+
+        # search rasters
+
+        qry = """
+                    SELECT
+                        cat.""" + self.config['title_col'] + """,
+                        cat.""" + self.config['abstract_col'] + """,
+                        cat.""" + self.config['rpath_col'] + cc_select + """
+                    FROM
+                        """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
+                    WHERE
+                        cat.""" + self.config['type_col'] + """ = 'raster' AND
+                        (
+                            cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                            cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                            """ + cc_where + """
+                        );"""
+        try:
+            cur.execute(qry, query_dict)
+        except Exception:
+            self.uc.bar_warn('Querying the metadata table for rasters failed! See logs and check your settings.')
+            self.uc.log_info(traceback.format_exc())
+            return
+
+        for row in cur.fetchall():
+            res = dict()
+            title, abstract, rpath = row[:3]
+            for c in self.cust_cols:
+                col_name = c['col']
+                res[col_name] = row[col_name]
+            if title is None:
+                title = 'Untitled'
+            res['type'] = 'raster'
+            res['title'] = title
+            res['abstract'] = abstract
+            res['rpath'] = rpath
+            res['geom_col'] = None
+            res['geom_type'] = None
+            self.search_results.append(res)
+            self.resultsListWidget.addItem('%s (raster)' % title)
 
     def get_col_type(self, col_name):
         cur = self._db_cur()
@@ -255,24 +300,35 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         for i in range(self.resultsListWidget.count()):
             # Loop through and add selected items
             if self.resultsListWidget.item(i).isSelected():
-                # Add the layer
-                uri = QgsDataSourceURI()
-                con_info = get_postgres_conn_info(self.config['connection'])
-                uri.setConnection(con_info['host'],
-                                  str(con_info['port']),
-                                  con_info['database'],
-                                  con_info['user'],
-                                  con_info['password'])
                 res = self.search_results[i]
-                display_geom = res['geom_type'].lower()
-                if display_geom.startswith('multi'):
-                    display_geom = display_geom[5:]
-                uri.setDataSource(res['schema'],
-                                  res['table'],
-                                  res['geom_col'])
-                layer_name = '%s (%s)' % (res['title'], display_geom)
-                vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
-                QgsMapLayerRegistry.instance().addMapLayer(vlayer)
+                if res['type'] == 'vector':
+                    # Add the vector layer
+                    uri = QgsDataSourceURI()
+                    con_info = get_postgres_conn_info(self.config['connection'])
+                    uri.setConnection(con_info['host'],
+                                      str(con_info['port']),
+                                      con_info['database'],
+                                      con_info['user'],
+                                      con_info['password'])
+
+                    display_geom = res['geom_type'].lower()
+                    if display_geom.startswith('multi'):
+                        display_geom = display_geom[5:]
+                    uri.setDataSource(res['schema'],
+                                      res['table'],
+                                      res['geom_col'])
+                    layer_name = '%s (%s)' % (res['title'], display_geom)
+                    vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
+                    if vlayer.isValid():
+                        QgsMapLayerRegistry.instance().addMapLayer(vlayer)
+                    else:
+                        self.uc.bar_warn('{} is not a valid vector layer.')
+                        self.uc.log_info('{} is not a valid vector layer\n{}'.format(
+                            res['title'], res))
+                else:
+                    # Add the raster layer
+                    layer_name = '{} (raster)'.format(res['title'])
+                    self.iface.addRasterLayer(res['rpath'], layer_name)
 
     def display_details(self, current_row):
         """

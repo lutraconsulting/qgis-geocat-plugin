@@ -84,6 +84,8 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         req_abs = s.value('abstractColumn', '', type=str)
         req_lay_sch = s.value('gisLayerSchemaCol', '', type=str)
         req_lay_tab = s.value('gisLayerTableCol', '', type=str)
+        req_lay_type = s.value('gisLayerTypeCol', '', type=str)
+        req_ras_path = s.value('gisRasterPathCol', '', type=str)
 
         self.block_widgets_signals(class_list=[QComboBox])
 
@@ -118,6 +120,12 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
             )
             self.layerTableNameComboBox.setCurrentIndex(
                 self.layerTableNameComboBox.findText(req_lay_tab)
+            )
+            self.layerTypeComboBox.setCurrentIndex(
+                self.layerTypeComboBox.findText(req_lay_type)
+            )
+            self.rasterPathComboBox.setCurrentIndex(
+                self.rasterPathComboBox.findText(req_ras_path)
             )
 
             self.get_custom_columns()
@@ -266,6 +274,12 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.layerTableNameComboBox.clear()
         self.layerTableNameComboBox.addItems(cols)
 
+        self.layerTypeComboBox.clear()
+        self.layerTypeComboBox.addItems(cols)
+
+        self.rasterPathComboBox.clear()
+        self.rasterPathComboBox.addItems(cols)
+
     def check_custom_cols(self):
         cur = self._get_cur()
         cols = list_columns(cur,
@@ -300,6 +314,8 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s.setValue("GeoCat/abstractColumn", self.abstractColumnComboBox.currentText())
         s.setValue("GeoCat/gisLayerSchemaCol", self.layerSchemaNameComboBox.currentText())
         s.setValue("GeoCat/gisLayerTableCol", self.layerTableNameComboBox.currentText())
+        s.setValue("GeoCat/gisLayerTypeCol", self.layerTypeComboBox.currentText())
+        s.setValue("GeoCat/gisRasterPathCol", self.rasterPathComboBox.currentText())
         self.set_custom_columns_settings()
 
         self.accept()
