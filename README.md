@@ -6,17 +6,19 @@ Layer Metadata Search is a plugin used to search GIS metadata. Layer Metadata Se
 
 Layer Metadata Search requires metadata to be stored in a PostgreSQL table with the following minimum information. Table column names need not be exactly the same as those described below.
 
-**title** - Human readable title of the dataset, e.g. Ordnance Survey Open Roads or Aerials.
+**title** - Human readable title of the dataset, e.g. *Ordnance Survey Open Roads* or *Aerial photos*.
 
-**type** - Dataset type: 'vector' or 'raster'.
+**type** - Dataset type: *vector* or *raster*.
 
-**abstract** - An abstract for the dataset, e.g. A nationally consistent, high-level and shareable view of GB's road network. OS Open Roads is a connected road network for Great Britain. It contains all classified roads (such as motorways and A & B roads) as well as officially named unclassified roads.
+**abstract** - An abstract for the dataset, e.g. *A nationally consistent, high-level and shareable view of GB's road network. OS Open Roads is a connected road network for Great Britain. It contains all classified roads (such as motorways and A & B roads) as well as officially named unclassified roads.*
 
 **other fields** - The plugin can also search on and display other custom metadata fields - described later.
 
-**schema** - The PostgreSQL schema containing the PostGIS table.
+**schema** - For vector datasets, the PostgreSQL schema containing the PostGIS table.
 
-**table** - The name of the PostGIS table.
+**table** - For vector datasets, the name of the PostGIS table.
+
+**path** - For raster datasets, the path to the raster dataset.
 
 Once configured, Layer Metadata Search will search for datasets using the title, abstract and any other custom metadata fields.
 
@@ -27,7 +29,7 @@ Layer Metadata Search can be configured in QGIS via `Plugins` > `Layer Metadata 
 
 ![](./Images/geo_cat_config.png)
 
-The *Custom / additonal metadata columns* section of the configuration is described later. 
+The *Custom / additional metadata columns* section of the configuration is described later. 
 
 
 ## Metadata Preparation
@@ -43,18 +45,19 @@ First, create a new metadata table and schema if required:
       name text,
       type text NOT NULL DEFAULT 'vector'::text,
       abstract text,
-      schema text,
-      "table" text,
-      path text,
+      schema text, -- required for vector datasets
+      "table" text, -- required for vector datasets
+      path text, -- required for raster datasets
       keywords text, -- optional, one of the custom columns
       mod_date date, -- optional
       tstamp timestamp without time zone, -- optional
+      -- insert other custom columns here as required
       CONSTRAINT metadata_pkey PRIMARY KEY (id)
     );
 
 ### Adding vector layers
 
-With the table created we can automatically populate it with layers we already have in our database. The following command will add rows to the metadata table for any tables not already featured in the metadata table:
+With the table created we can automatically populate it with layers we already have in our database. The following query will add rows to the metadata table for any tables not already featured in the metadata table:
 
 	INSERT INTO layer_metadata_search.metadata
 		(schema, "table")
@@ -75,13 +78,19 @@ Now we can simply open the metadata table in pgAdminIII and add the titles and a
 
 ### Adding raster layers
 
-Users are encouraged to create virtual raster files (VRT) for raster groups and add them to the metadata table instead of adding single raster files. This way users will get a single search result for a particular raster group (Aerials, LiDAR etc.) and will be able to load all the rasters at once. Virtual raster files can be easily created using [gdalbuildvrt](http://www.gdal.org/gdalbuildvrt.html) from GDAL. Adding single raster files is still possible tough.
+A raster dataset / layer may consist of a single image, or multiple image tiles which, together, make up the entire layer.
 
-For raster files, the following columns of the metadata table are required:
+For tiled layers, users are encouraged to create virtual raster files (VRT) which reference all tiles within a layer in a single VRT file. This allows a single metadata entry to be added to the table describing the whole layer.
 
- * name -- user-friendly name
- * type = 'raster'
- * path -- absolute path to the raster file
+Virtual raster files can be easily created using [gdalbuildvrt](http://www.gdal.org/gdalbuildvrt.html) (part of GDAL). This tool can also be found in QGIS under *Raster* > *Miscellaneous* > *Build Virtual Raster*. 
+
+For layers consisting of a single image there is no need to create a VRT file.
+
+For raster files, the following columns of the metadata table should be populated as a minimum:
+
+ * name (user-friendly name)
+ * type (set to *raster*)
+ * path (absolute path to the raster file)
 
 
 ## Using Custom Metadata Fields
@@ -104,9 +113,9 @@ This section describes how to make use of custom metadata fields in the Layer Me
 	*Please note that when using the DateEdit widget the source column in the database should be of type `date`*
 
 
-## Upgrading from an earlier version
+## Upgrading from previous versions
 
-To support raster datasets, existing plugin's databases have to be modified in the following manner:
+If you have an existing metadata table which was created before raster support was added to this plugin, you will need to modify the metadata table in the following manner:
 
     -- Add a column for layer type (vector/raster)
     ALTER TABLE layer_metadata_search.metadata ADD COLUMN type text NOT NULL default 'vector';
@@ -114,7 +123,7 @@ To support raster datasets, existing plugin's databases have to be modified in t
     -- Add a column for raster file path
     ALTER TABLE layer_metadata_search.metadata ADD COLUMN path text;
 
-    -- Set the type for currently existing vector laters
+    -- Set the type for any existing vector layers
     UPDATE layer_metadata_search.metadata SET type = 'vector';
 
-When adding a dataset, always specify its type as either 'vector' or 'raster'.
+When adding a dataset, always specify its type as either *vector* or *raster*.
