@@ -36,17 +36,17 @@ from PyQt4.QtGui import (
 from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
 from dbutils import (
     get_postgres_conn_info,
-    get_connection
+    get_connection,
+    list_columns
 )
 from qgis.core import (
     QgsDataSourceURI,
     QgsVectorLayer,
-    QgsMapLayerRegistry,
-    QgsMessageLog
+    QgsMapLayerRegistry
 )
-from qgis.gui import QgsMessageBar
 from .gc_utils import load_ui
-
+from errors import CustomColumnException, ConnectionException
+from user_communication import UserCommunication
 
 FORM_CLASS = load_ui('geo_cat_dialog_base')
 
@@ -56,13 +56,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         QDialog.__init__(self, parent)
         self.setupUi(self)
         self.iface = iface
+        self.uc = UserCommunication(iface, 'Metadata Plugin')
         self.config = dict()
         self._setup_config()
         self.wclasses = {'QLineEdit': QLineEdit,
                          'QTextEdit': QTextEdit,
                          'QDateEdit': QDateEdit}
-        # self.setup_custom_widgets()
         self.search_results = []
+        self.cust_cols = None
 
         # signals
         self.searchPushButton.clicked.connect(self.search)
@@ -75,8 +76,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
 
     def setup_custom_widgets(self):
-        # read custom columns settings
         self.clear_layout(self.customColsLayout)
+        # read custom columns settings
         s = QSettings()
         s.beginGroup('GeoCat/CustomColumns')
         self.cust_cols = []
@@ -89,12 +90,22 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             s.endGroup()
 
         # create widgets for custom columns
+        cur = self._db_cur(dict=False)
+        if not cur:
+            raise ConnectionException
+        cols = list_columns(cur,
+                            (self.config['cat_schema']).strip('"'),
+                            (self.config['cat_table']).strip('"')
+        )
         for i, c in enumerate(self.cust_cols):
-            col_name = c['col']
+            if not c['col'] in cols:
+                raise CustomColumnException('Metadata table has no "{}" column. Check your settings.'.format(c['col']))
+            if not c['desc']:
+                raise CustomColumnException('Custom column has no description. Check your settings.')
             label = QLabel(c['desc'])
             self.customColsLayout.addWidget(label)
             w = self.wclasses[c['widget']]()
-            w.setObjectName('{}_{}'.format(col_name, i))
+            w.setObjectName('{}_{}'.format(c['col'], i))
             w.setReadOnly(True)
             self.customColsLayout.addWidget(w)
 
@@ -107,13 +118,18 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['abstract_col'] = '"%s"' % s.value('GeoCat/abstractColumn', '', type=str)
         self.config['schema_col'] = '"%s"' % s.value('GeoCat/gisLayerSchemaCol', '', type=str)
         self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
+        self.config['type_col'] = '"%s"' % s.value('GeoCat/gisLayerTypeCol', '', type=str)
+        self.config['rpath_col'] = '"%s"' % s.value('GeoCat/gisRasterPathCol', '', type=str)
 
-    def _db_cur(self):
+    def _db_cur(self, dict=True):
         con_info = get_postgres_conn_info(self.config['connection'])
         if not self.config['connection']:
             return None
         con = get_connection(con_info)
-        return con.cursor(cursor_factory=DictCursor)
+        if dict:
+            return con.cursor(cursor_factory=DictCursor)
+        else:
+            return con.cursor()
 
     def show_help(self):
         help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
@@ -135,7 +151,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         cur = self._db_cur()
         if not cur:
-            self.bar_warn('There is no connection defined.')
+            self.uc.bar_warn('There is no connection defined.')
             return
 
         search_text = self.searchLineEdit.text()
@@ -178,6 +194,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
                 public.geometry_columns AS gc
             WHERE
+                cat.""" + self.config['type_col'] + """ = 'vector' AND
                 (
                     cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
                     cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
@@ -191,8 +208,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         try:
             cur.execute(qry, query_dict)
         except Exception:
-            self.bar_warn('Querying the metadata table failed! See logs and check your settings.')
-            self.log_info(traceback.format_exc())
+            self.uc.bar_warn('Querying the metadata table failed! See logs and check your settings.')
+            self.uc.log_info(traceback.format_exc())
             self.search_results = []
             return
 
@@ -208,11 +225,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 res[col_name] = row[col_name]
             if title is None:
                 title = 'Untitled'
+            res['type'] = 'vector'
             res['title'] = title
             res['abstract'] = abstract
-            # res['date'] = date
             res['schema'] = schema
             res['table'] = table
+            res['rpath'] = None
             res['geom_col'] = geom_col
             res['geom_type'] = ty
             self.search_results.append(res)
@@ -220,6 +238,46 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             if display_geom.startswith('multi'):
                 display_geom = display_geom[5:]
             self.resultsListWidget.addItem('%s (%s)' % (title, display_geom))
+
+        # search rasters
+
+        qry = """
+                    SELECT
+                        cat.""" + self.config['title_col'] + """,
+                        cat.""" + self.config['abstract_col'] + """,
+                        cat.""" + self.config['rpath_col'] + cc_select + """
+                    FROM
+                        """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
+                    WHERE
+                        cat.""" + self.config['type_col'] + """ = 'raster' AND
+                        (
+                            cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                            cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                            """ + cc_where + """
+                        );"""
+        try:
+            cur.execute(qry, query_dict)
+        except Exception:
+            self.uc.bar_warn('Querying the metadata table for rasters failed! See logs and check your settings.')
+            self.uc.log_info(traceback.format_exc())
+            return
+
+        for row in cur.fetchall():
+            res = dict()
+            title, abstract, rpath = row[:3]
+            for c in self.cust_cols:
+                col_name = c['col']
+                res[col_name] = row[col_name]
+            if title is None:
+                title = 'Untitled'
+            res['type'] = 'raster'
+            res['title'] = title
+            res['abstract'] = abstract
+            res['rpath'] = rpath
+            res['geom_col'] = None
+            res['geom_type'] = None
+            self.search_results.append(res)
+            self.resultsListWidget.addItem('%s (raster)' % title)
 
     def get_col_type(self, col_name):
         cur = self._db_cur()
@@ -242,24 +300,35 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         for i in range(self.resultsListWidget.count()):
             # Loop through and add selected items
             if self.resultsListWidget.item(i).isSelected():
-                # Add the layer
-                uri = QgsDataSourceURI()
-                con_info = get_postgres_conn_info(self.config['connection'])
-                uri.setConnection(con_info['host'],
-                                  str(con_info['port']),
-                                  con_info['database'],
-                                  con_info['user'],
-                                  con_info['password'])
                 res = self.search_results[i]
-                display_geom = res['geom_type'].lower()
-                if display_geom.startswith('multi'):
-                    display_geom = display_geom[5:]
-                uri.setDataSource(res['schema'],
-                                  res['table'],
-                                  res['geom_col'])
-                layer_name = '%s (%s)' % (res['title'], display_geom)
-                vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
-                QgsMapLayerRegistry.instance().addMapLayer(vlayer)
+                if res['type'] == 'vector':
+                    # Add the vector layer
+                    uri = QgsDataSourceURI()
+                    con_info = get_postgres_conn_info(self.config['connection'])
+                    uri.setConnection(con_info['host'],
+                                      str(con_info['port']),
+                                      con_info['database'],
+                                      con_info['user'],
+                                      con_info['password'])
+
+                    display_geom = res['geom_type'].lower()
+                    if display_geom.startswith('multi'):
+                        display_geom = display_geom[5:]
+                    uri.setDataSource(res['schema'],
+                                      res['table'],
+                                      res['geom_col'])
+                    layer_name = '%s (%s)' % (res['title'], display_geom)
+                    vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
+                    if vlayer.isValid():
+                        QgsMapLayerRegistry.instance().addMapLayer(vlayer)
+                    else:
+                        self.uc.bar_warn('{} is not a valid vector layer.')
+                        self.uc.log_info('{} is not a valid vector layer\n{}'.format(
+                            res['title'], res))
+                else:
+                    # Add the raster layer
+                    layer_name = '{} (raster)'.format(res['title'])
+                    self.iface.addRasterLayer(res['rpath'], layer_name)
 
     def display_details(self, current_row):
         """
@@ -315,12 +384,3 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             layout.removeWidget(widgetToRemove)
             # remove it from the gui
             widgetToRemove.setParent(None)
-
-    def log_info(self, msg):
-        try:
-            QgsMessageLog.logMessage(msg, 'Layer Metadata Search', QgsMessageLog.INFO)
-        except TypeError:
-            QgsMessageLog.logMessage(repr(msg), 'Layer Metadata Search', QgsMessageLog.INFO)
-
-    def bar_warn(self, msg, dur=5):
-        self.iface.messageBar().pushMessage('Layer Metadata Search', msg, level=QgsMessageBar.WARNING, duration=dur)
