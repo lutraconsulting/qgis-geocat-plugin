@@ -201,8 +201,7 @@ class GeoCat:
 
         # clear any previuos search text and results
         self.dlg.searchLineEdit.clear()
-        self.dlg.resultsListWidget.clear()
-        self.dlg.clear_details()
+        self.dlg.clear_results()
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop

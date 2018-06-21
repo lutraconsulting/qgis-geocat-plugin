@@ -57,26 +57,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QListWidget" name="resultsListWidget">
-         <property name="minimumSize">
-          <size>
-           <width>150</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>300</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="selectionMode">
-          <enum>QAbstractItemView::ExtendedSelection</enum>
-         </property>
-         <property name="selectionBehavior">
-          <enum>QAbstractItemView::SelectRows</enum>
-         </property>
-        </widget>
+        <widget class="QTableView" name="resultsTable"/>
        </item>
       </layout>
      </item>
@@ -120,8 +101,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>396</width>
-            <height>561</height>
+            <width>398</width>
+            <height>507</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">

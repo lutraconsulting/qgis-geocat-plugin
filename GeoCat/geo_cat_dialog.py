@@ -31,8 +31,11 @@ from PyQt4.QtGui import (
     QLineEdit,
     QTextEdit,
     QDateEdit,
-    QDesktopServices
-)
+    QDesktopServices,
+    QTableWidgetItem,
+    QStandardItemModel,
+    QStandardItem,
+    QAbstractItemView)
 from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
 from dbutils import (
     get_postgres_conn_info,
@@ -63,14 +66,21 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                          'QTextEdit': QTextEdit,
                          'QDateEdit': QDateEdit}
         self.search_results = []
+        self.tableToResults = {}
         self.cust_cols = None
+
+        self.table_model = QStandardItemModel()
+        self.init_table()
 
         # signals
         self.searchPushButton.clicked.connect(self.search)
         self.searchLineEdit.returnPressed.connect(self.search)
-        self.resultsListWidget.doubleClicked.connect(self.add_selected_layers)
-        self.resultsListWidget.currentRowChanged.connect(self.display_details)
-        self.resultsListWidget.itemSelectionChanged.connect(self.on_result_sel_changed)
+
+        self.resultsTable.doubleClicked.connect(self.add_selected_layers)
+
+        self.resultsTable.selectionModel().selectionChanged.connect(self.display_details_table)
+        self.resultsTable.selectionModel().selectionChanged.connect(self.on_result_sel_changed)
+
         self.helpPushButton.clicked.connect(self.show_help)
         self.closePushButton.clicked.connect(self.reject)
         self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
@@ -157,9 +167,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         search_text = self.searchLineEdit.text()
 
         if search_text.strip() == '':
-            self.search_results = []
-            self.resultsListWidget.clear()
-            self.clear_details()
+            self.clear_results()
             return
 
         wildcarded_search_string = ''
@@ -191,20 +199,17 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 gc.f_geometry_column,
                 gc.type""" + cc_select + """
             FROM
-                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
-                public.geometry_columns AS gc
+                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
+                LEFT JOIN public.geometry_columns AS gc
+				ON gc.f_table_schema ILIKE cat.""" + self.config['schema_col'] + """
+				AND gc.f_table_name ILIKE cat.""" + self.config['table_col'] + """
             WHERE
-                cat.""" + self.config['type_col'] + """ = 'vector' AND
                 (
                     cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
                     cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
                     """ + cc_where + """
-                ) AND
-                cat.""" + self.config['schema_col'] + """ IS NOT NULL AND
-                cat.""" + self.config['table_col'] + """ IS NOT NULL AND
-                -- Join conditions:
-                cat.""" + self.config['schema_col'] + """ = gc.f_table_schema AND
-                cat.""" + self.config['table_col'] + """ = gc.f_table_name"""
+                )
+                """
         try:
             cur.execute(qry, query_dict)
         except Exception:
@@ -213,9 +218,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.search_results = []
             return
 
-        # Clear the results
-        self.search_results = []
-        self.resultsListWidget.clear()
+        self.clear_results()
 
         for row in cur.fetchall():
             res = dict()
@@ -237,10 +240,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             display_geom = ty.lower()
             if display_geom.startswith('multi'):
                 display_geom = display_geom[5:]
-            self.resultsListWidget.addItem('%s (%s)' % (title, display_geom))
 
+        # TODO make optional @vsklencar
         # search rasters
-
         qry = """
                     SELECT
                         cat.""" + self.config['title_col'] + """,
@@ -277,7 +279,41 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             res['geom_col'] = None
             res['geom_type'] = None
             self.search_results.append(res)
-            self.resultsListWidget.addItem('%s (raster)' % title)
+
+        self.appendToResultTable()
+
+    def clear_results(self):
+        self.search_results = []
+        self.tableToResults = {}
+        self.table_model.clear()
+        self.clear_details()
+
+    def init_table(self):
+        self.resultsTable.setModel(self.table_model)
+        self.resultsTable.setSortingEnabled(True)
+        self.table_model.clear()
+        self.resultsTable.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.resultsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+
+    def appendToResultTable(self):
+        # Header
+        if len(self.search_results):
+            labels = []
+            for key in self.search_results[0]:
+                labels.append(key)
+            self.table_model.setHorizontalHeaderLabels(labels)
+
+        # Content
+        for row, item in enumerate(self.search_results):
+            row_items = []
+            for key in item:
+                new_item = QStandardItem(item[key])
+                row_items.append(new_item)
+            self.table_model.appendRow(row_items)
+            item = self.table_model.item(row)
+            self.tableToResults[item] = row
+        self.resultsTable.resizeColumnToContents(0)
 
     def get_col_type(self, col_name):
         cur = self._db_cur()
@@ -297,38 +333,50 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             Add each of the selected layers to QGIS.
         :return:
         """
-        for i in range(self.resultsListWidget.count()):
-            # Loop through and add selected items
-            if self.resultsListWidget.item(i).isSelected():
-                res = self.search_results[i]
-                if res['type'] == 'vector':
-                    # Add the vector layer
-                    uri = QgsDataSourceURI()
-                    con_info = get_postgres_conn_info(self.config['connection'])
-                    uri.setConnection(con_info['host'],
-                                      str(con_info['port']),
-                                      con_info['database'],
-                                      con_info['user'],
-                                      con_info['password'])
 
-                    display_geom = res['geom_type'].lower()
-                    if display_geom.startswith('multi'):
-                        display_geom = display_geom[5:]
-                    uri.setDataSource(res['schema'],
-                                      res['table'],
-                                      res['geom_col'])
-                    layer_name = '%s (%s)' % (res['title'], display_geom)
-                    vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
-                    if vlayer.isValid():
-                        QgsMapLayerRegistry.instance().addMapLayer(vlayer)
-                    else:
-                        self.uc.bar_warn('{} is not a valid vector layer.')
-                        self.uc.log_info('{} is not a valid vector layer\n{}'.format(
-                            res['title'], res))
+        selection = self.resultsTable.selectionModel().selectedRows()
+        for i in range(len(selection)):
+            index = selection[i]
+            item = self.table_model.item(index.row())
+            ix = self.tableToResults[item]
+            res = self.search_results[ix]
+            if res['type'] == 'vector':
+                # Add the vector layer
+                uri = QgsDataSourceURI()
+                con_info = get_postgres_conn_info(self.config['connection'])
+                uri.setConnection(con_info['host'],
+                                  str(con_info['port']),
+                                  con_info['database'],
+                                  con_info['user'],
+                                  con_info['password'])
+
+                display_geom = res['geom_type'].lower()
+                if display_geom.startswith('multi'):
+                    display_geom = display_geom[5:]
+                uri.setDataSource(res['schema'],
+                                  res['table'],
+                                  res['geom_col'])
+                layer_name = '%s (%s)' % (res['title'], display_geom)
+                vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
+                if vlayer.isValid():
+                    QgsMapLayerRegistry.instance().addMapLayer(vlayer)
                 else:
-                    # Add the raster layer
-                    layer_name = '{} (raster)'.format(res['title'])
-                    self.iface.addRasterLayer(res['rpath'], layer_name)
+                    self.uc.bar_warn('{} is not a valid vector layer.')
+                    self.uc.log_info('{} is not a valid vector layer\n{}'.format(
+                        res['title'], res))
+            else:
+                # Add the raster layer
+                layer_name = '{} (raster)'.format(res['title'])
+                self.iface.addRasterLayer(res['rpath'], layer_name)
+
+    def display_details_table(self):
+        selected_rows  = self.resultsTable.selectionModel().selectedRows()
+        if len(selected_rows):
+            index = selected_rows[0]
+            item = self.table_model.item(index.row())
+            ix = self.tableToResults[item]
+            self.display_details(ix)
+
 
     def display_details(self, current_row):
         """
@@ -372,7 +420,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
     def on_result_sel_changed(self):
         # Determine if we have a selection, if so, enable the add features button
-        if len(self.resultsListWidget.selectedItems()) > 0:
+        if len(self.resultsTable.selectionModel().selectedRows()) > 0:
             self.addSelectedPushButton.setEnabled(True)
         else:
             self.addSelectedPushButton.setEnabled(False)
