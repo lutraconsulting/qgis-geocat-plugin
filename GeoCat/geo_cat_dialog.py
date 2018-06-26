@@ -149,15 +149,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         QDesktopServices.openUrl(QUrl(help_url))
 
     def get_metadata_table_cols(self, cur):
-        qry = """
-            SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema =""" + self.config['cat_schema'] + """
-                AND table_name = """ + self.config['cat_table'] + """"""
-
         qry = "SELECT column_name FROM information_schema.columns "+ \
                       "WHERE table_schema = {} AND table_name = {}".format(self.config['cat_schema'], self.config['cat_table']).replace('\"', '\'')
-        dictionary = {'schema': self.config['cat_schema'], 'table': self.config['cat_table'] }
         try:
             cur.execute(qry)
 
@@ -216,9 +209,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         meta_select = ''
         meta_where = ''
-        cols = self.get_metadata_table_cols(cur)
         ignore_list = ['ignore', 'id', 'private']
-        self.meta_cols = cols
+        # TODO clean up redundant cols in query
+        self.meta_cols = self.get_metadata_table_cols(cur)
         for col in self.meta_cols:
             if not col:
                 continue
