@@ -286,13 +286,13 @@
    <item row="11" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox_4">
      <property name="title">
-      <string>Ignore column</string>
+      <string>Ignore setting</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_6">
       <item row="1" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>TextLabel</string>
+         <string>ignore column</string>
         </property>
        </widget>
       </item>
