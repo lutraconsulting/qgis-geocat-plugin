@@ -86,6 +86,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         req_lay_tab = s.value('gisLayerTableCol', '', type=str)
         req_lay_type = s.value('gisLayerTypeCol', '', type=str)
         req_ras_path = s.value('gisRasterPathCol', '', type=str)
+        ignore_col = s.value('ignoreCol', '', type=str)
 
         self.block_widgets_signals(class_list=[QComboBox])
 
@@ -129,6 +130,10 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
             )
 
             self.get_custom_columns()
+
+            self.ignoreComboBox.setCurrentIndex(
+                self.ignoreComboBox.findText(ignore_col)
+            )
 
             self.block_widgets_signals(block=False, class_list=[QComboBox])
 
@@ -280,6 +285,9 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.rasterPathComboBox.clear()
         self.rasterPathComboBox.addItems(cols)
 
+        self.ignoreComboBox.clear()
+        self.ignoreComboBox.addItems(cols)
+
     def check_custom_cols(self):
         cur = self._get_cur()
         cols = list_columns(cur,
@@ -316,6 +324,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s.setValue("GeoCat/gisLayerTableCol", self.layerTableNameComboBox.currentText())
         s.setValue("GeoCat/gisLayerTypeCol", self.layerTypeComboBox.currentText())
         s.setValue("GeoCat/gisRasterPathCol", self.rasterPathComboBox.currentText())
+        s.setValue("GeoCat/ignoreCol", self.ignoreComboBox.currentText())
         self.set_custom_columns_settings()
 
         self.accept()

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>523</width>
-    <height>524</height>
+    <height>724</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -32,122 +32,7 @@
    <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox_3">
-     <property name="title">
-      <string>Metadata table</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
-       <widget class="QLabel" name="postGisConnectionLabel">
-        <property name="text">
-         <string>PostGIS Connection</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="postGisConnectionComboBox">
-        <property name="maximumSize">
-         <size>
-          <width>1024</width>
-          <height>16777215</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="MetadataTableSchemaLabel">
-        <property name="text">
-         <string>Schema</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="metadataTableSchemaComboBox"/>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="metadataTableNameLabel">
-        <property name="text">
-         <string>Table name</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="metadataTableNameComboBox"/>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string>Required metadata table columns</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="1">
-       <widget class="QComboBox" name="layerSchemaNameComboBox"/>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="titleColumnLabel">
-        <property name="text">
-         <string>Title Column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="layerTableNameLabel">
-        <property name="text">
-         <string>Layer table column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="layerSchemaNameLabel">
-        <property name="text">
-         <string>Layer schema column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QComboBox" name="titleColumnComboBox"/>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="layerTableNameComboBox"/>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="abstractColumnLabel">
-        <property name="text">
-         <string>Abstract Column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QComboBox" name="abstractColumnComboBox"/>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Dataset type column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="layerTypeComboBox"/>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="rasterPathComboBox"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Raster path column</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="11" column="0" colspan="2">
+   <item row="12" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -270,6 +155,121 @@
      </layout>
     </widget>
    </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Metadata table</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QLabel" name="postGisConnectionLabel">
+        <property name="text">
+         <string>PostGIS Connection</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="postGisConnectionComboBox">
+        <property name="maximumSize">
+         <size>
+          <width>1024</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="MetadataTableSchemaLabel">
+        <property name="text">
+         <string>Schema</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="metadataTableSchemaComboBox"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="metadataTableNameLabel">
+        <property name="text">
+         <string>Table name</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="metadataTableNameComboBox"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Required metadata table columns</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="1" column="1">
+       <widget class="QComboBox" name="layerSchemaNameComboBox"/>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="titleColumnLabel">
+        <property name="text">
+         <string>Title Column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="layerTableNameLabel">
+        <property name="text">
+         <string>Layer table column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="layerSchemaNameLabel">
+        <property name="text">
+         <string>Layer schema column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QComboBox" name="titleColumnComboBox"/>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="layerTableNameComboBox"/>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="abstractColumnLabel">
+        <property name="text">
+         <string>Abstract Column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QComboBox" name="abstractColumnComboBox"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Dataset type column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="layerTypeComboBox"/>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="rasterPathComboBox"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Raster path column</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item row="10" column="1">
     <spacer name="verticalSpacer">
      <property name="orientation">
@@ -282,6 +282,25 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item row="11" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_4">
+     <property name="title">
+      <string>Ignore column</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="ignoreComboBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>

@@ -21,9 +21,15 @@
  ***************************************************************************/
 """
 
-from psycopg2.extras import DictCursor
-import traceback
 import datetime
+import traceback
+from qgis.core import (
+    QgsDataSourceURI,
+    QgsVectorLayer,
+    QgsMapLayerRegistry
+)
+
+from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
 # noinspection PyPackageRequirements
 from PyQt4.QtGui import (
     QDialog,
@@ -32,24 +38,19 @@ from PyQt4.QtGui import (
     QTextEdit,
     QDateEdit,
     QDesktopServices,
-    QTableWidgetItem,
     QStandardItemModel,
     QStandardItem,
     QAbstractItemView)
-from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
+from psycopg2.extras import DictCursor
+
 from dbutils import (
     get_postgres_conn_info,
     get_connection,
     list_columns
 )
-from qgis.core import (
-    QgsDataSourceURI,
-    QgsVectorLayer,
-    QgsMapLayerRegistry
-)
-from .gc_utils import load_ui
 from errors import CustomColumnException, ConnectionException
 from user_communication import UserCommunication
+from .gc_utils import load_ui
 
 FORM_CLASS = load_ui('geo_cat_dialog_base')
 
@@ -68,6 +69,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.search_results = []
         self.tableToResults = {}
         self.cust_cols = None
+        self.meta_cols = None
 
         self.table_model = QStandardItemModel()
         self.init_table()
@@ -130,6 +132,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['table_col'] = '"%s"' % s.value('GeoCat/gisLayerTableCol', '', type=str)
         self.config['type_col'] = '"%s"' % s.value('GeoCat/gisLayerTypeCol', '', type=str)
         self.config['rpath_col'] = '"%s"' % s.value('GeoCat/gisRasterPathCol', '', type=str)
+        self.config['ignore_col'] = '"%s"' % s.value('GeoCat/ignoreCol', '', type=str)
 
     def _db_cur(self, dict=True):
         con_info = get_postgres_conn_info(self.config['connection'])
@@ -144,6 +147,27 @@ class GeoCatDialog(QDialog, FORM_CLASS):
     def show_help(self):
         help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
         QDesktopServices.openUrl(QUrl(help_url))
+
+    def get_metadata_table_cols(self, cur):
+        qry = """
+            SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema =""" + self.config['cat_schema'] + """
+                AND table_name = """ + self.config['cat_table'] + """"""
+
+        qry = "SELECT column_name FROM information_schema.columns "+ \
+                      "WHERE table_schema = {} AND table_name = {}".format(self.config['cat_schema'], self.config['cat_table']).replace('\"', '\'')
+        dictionary = {'schema': self.config['cat_schema'], 'table': self.config['cat_table'] }
+        try:
+            cur.execute(qry)
+
+            return cur.fetchall()
+        except Exception:
+            self.uc.bar_warn('Querying the metadata table failed! See logs and check your settings.')
+            self.uc.log_info(traceback.format_exc())
+            self.search_results = []
+            return
+
 
     def search(self):
         """
@@ -190,6 +214,24 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 cc_select += ',\ncat.{}'.format(col_name)
             cc_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
 
+        meta_select = ''
+        meta_where = ''
+        cols = self.get_metadata_table_cols(cur)
+        ignore_list = ['ignore', 'id', 'private']
+        self.meta_cols = cols
+        for col in self.meta_cols:
+            if not col:
+                continue
+            col_name = col[0]
+            if not col_name or col_name in ignore_list:
+                continue
+            # check the column type
+            if self.get_col_type(col_name) in ['date']:
+                meta_select += ",\nto_char(cat.{}, 'YYYY-MM-DD') AS {}".format(col_name, col_name)
+            else:
+                meta_select += ',\ncat.{}'.format(col_name)
+            meta_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
+
         qry = """
             SELECT
                 cat.""" + self.config['title_col'] + """,
@@ -198,6 +240,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 cat.""" + self.config['table_col'] + """,
                 gc.f_geometry_column,
                 gc.type""" + cc_select + """
+                """ + meta_select + """
             FROM
                 """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
                 LEFT JOIN public.geometry_columns AS gc
@@ -208,9 +251,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                     cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
                     cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
                     """ + cc_where + """
+                    """ + meta_where + """
                 )
+                AND cat.""" + self.config['ignore_col'] + """ is not True
                 """
         try:
+            print(qry)
             cur.execute(qry, query_dict)
         except Exception:
             self.uc.bar_warn('Querying the metadata table failed! See logs and check your settings.')
@@ -241,7 +287,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             if display_geom.startswith('multi'):
                 display_geom = display_geom[5:]
 
-        # TODO make optional @vsklencar
         # search rasters
         qry = """
                     SELECT
