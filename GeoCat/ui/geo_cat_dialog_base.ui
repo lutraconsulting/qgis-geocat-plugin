@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>774</width>
+    <width>782</width>
     <height>717</height>
    </rect>
   </property>
@@ -25,7 +25,10 @@
     </widget>
    </item>
    <item row="3" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
      <property name="rightMargin">
       <number>0</number>
      </property>
@@ -76,14 +79,14 @@
        <item>
         <widget class="QScrollArea" name="detailsScrollArea">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="minimumSize">
           <size>
-           <width>400</width>
+           <width>300</width>
            <height>200</height>
           </size>
          </property>
@@ -101,8 +104,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>398</width>
-            <height>507</height>
+            <width>298</width>
+            <height>540</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
@@ -157,6 +160,9 @@
       <widget class="QPushButton" name="searchPushButton">
        <property name="text">
         <string>Search</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -216,9 +222,27 @@
      </item>
     </layout>
    </item>
+   <item row="2" column="0">
+    <widget class="QCheckBox" name="showPrivateCheckBox">
+     <property name="text">
+      <string>Also show results I may not have access to</string>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>searchLineEdit</tabstop>
+  <tabstop>searchPushButton</tabstop>
+  <tabstop>showPrivateCheckBox</tabstop>
+  <tabstop>resultsTable</tabstop>
+  <tabstop>detailsScrollArea</tabstop>
+  <tabstop>title_ledit</tabstop>
+  <tabstop>abstract_ledit</tabstop>
+  <tabstop>addSelectedPushButton</tabstop>
   <tabstop>closePushButton</tabstop>
   <tabstop>helpPushButton</tabstop>
  </tabstops>
