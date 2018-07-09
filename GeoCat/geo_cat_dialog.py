@@ -89,9 +89,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.showPrivateCheckBox.setCheckState(show_private_cs)
 
         # signals
-        self.searchPushButton.clicked.connect(self.search)
+        self.searchPushButton.clicked.connect(self.search_push_button_clicked)
         self.searchLineEdit.returnPressed.connect(self.search)
-        self.showPrivateCheckBox.stateChanged.connect(self.search)
+        self.showPrivateCheckBox.stateChanged.connect(self.show_private_check_box_toggled)
 
         self.resultsTable.doubleClicked.connect(self.add_selected_layers)
 
@@ -102,10 +102,27 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.closePushButton.clicked.connect(self.on_close_clicked)
         self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
 
+        self.browseAllCheckBox.stateChanged.connect(self.browse_all_check_box_toggled)
+
         # Keyboard shortcut to focus and highlight search text
         self.connect(QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F), self), SIGNAL('activated()'), self.ctrl_f_pressed)
 
         # import pydevd; pydevd.settrace(suspend=False)
+
+    def search_push_button_clicked(self, checked):
+        self.search()
+
+    def show_private_check_box_toggled(self, check_state):
+        self.search()
+
+    def browse_all_check_box_toggled(self, check_state):
+        if check_state == Qt.Checked:
+            self.searchGroupBox.setEnabled(False)
+            self.search(use_where_clause=False)
+        else:
+            self.searchGroupBox.setEnabled(True)
+            self.clear_results()
+            self.ctrl_f_pressed()
 
     def ctrl_f_pressed(self):
         self.searchLineEdit.setFocus()
@@ -174,7 +191,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             return self.db_con.cursor()
 
     def show_help(self):
-        help_url = 'http://intranet.dartmoor-npa.gov.uk/useful_i/gis-mapping-guidance'
+        help_url = 'https://github.com/lutraconsulting/qgis-geocat-plugin'
         QDesktopServices.openUrl(QUrl(help_url))
 
     def get_metadata_table_cols(self, cur):
@@ -190,7 +207,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.search_results = []
             return
 
-    def search(self):
+    def search(self, use_where_clause=True):
         """
             Takes the user input and searches the metadata table (name and abstract columns), returning
             results for display.  The following details are returned and stored:
@@ -211,7 +228,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         if search_text.strip() == '':
             self.clear_results()
-            return
+            if use_where_clause:
+                return
 
         wildcarded_search_string = ''
         for part in search_text.split():
@@ -262,6 +280,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if self.config['private_col'] != '""' and self.config['private_col'] != '"--DISABLED--"':
             private_select = ', ' + self.config['private_col'] + ' AS private'
 
+        qry_where = """"""
+        if use_where_clause:
+            qry_where = """(
+                                cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                                cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                                """ + cc_where + """
+                                """ + meta_where + """
+                            ) AND """
         qry = """
             SELECT
                 cat.""" + self.config['title_col'] + """,
@@ -277,15 +303,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 				ON gc.f_table_schema = cat.""" + self.config['schema_col'] + """
 				AND gc.f_table_name = cat.""" + self.config['table_col'] + """
             WHERE
-                (
-                    cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
-                    cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
-                    """ + cc_where + """
-                    """ + meta_where + """
-                )
-                AND cat.""" + self.config['ignore_col'] + """ != TRUE
-                AND cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
+                """ + qry_where + """
+                cat.""" + self.config['ignore_col'] + """ != TRUE AND
+                cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
                 """
+        if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause:
+            qry += """ AND """ + self.config['private_col'] + """ = FALSE"""
         try:
             cur.execute(qry, query_dict)
         except Exception:
@@ -320,6 +343,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.search_results.append(res)
 
         # search rasters and WMS
+        qry_where = """"""
+        if use_where_clause:
+            qry_where = """ AND (
+                                cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                                cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                                """ + cc_where + """
+                            )"""
         qry = """
                     SELECT
                         cat.""" + self.config['title_col'] + """,
@@ -337,12 +367,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                             cat.""" + self.config['type_col'] + """ = %(raster_identifier)s OR
                             cat.""" + self.config['type_col'] + """ = %(wms_identifier)s
                         ) AND
-                        cat.""" + self.config['ignore_col'] + """ != TRUE AND
-                        (
-                            cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
-                            cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
-                            """ + cc_where + """
-                        );"""
+                        cat.""" + self.config['ignore_col'] + """ != TRUE
+                    """ + qry_where
+        if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause:
+            qry += """ AND """ + self.config['private_col'] + """ = FALSE"""
         try:
             cur.execute(qry, query_dict)
         except Exception:
@@ -405,10 +433,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         # Content
         for row, item in enumerate(self.search_results):
-            # Do not add 'private' rows if we do not wish to see them
-            if not include_private:
-                if item['private'] == 'Yes':
-                    continue
 
             row_items = []
 

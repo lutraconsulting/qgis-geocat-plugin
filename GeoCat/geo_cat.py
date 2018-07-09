@@ -200,6 +200,7 @@ class GeoCat:
             return
 
         # clear any previuos search text and results
+        self.dlg.browseAllCheckBox.setCheckState(Qt.Unchecked)
         self.dlg.searchLineEdit.clear()
         self.dlg.clear_results()
         # show the dialog
