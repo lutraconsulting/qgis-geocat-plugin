@@ -54,6 +54,7 @@ FORM_CLASS = load_ui('config_dialog_base')
 class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def __init__(self, iface, parent=None):
+        # import pydevd; pydevd.settrace(suspend=False)
         """Constructor."""
         QDialog.__init__(self, parent)
         self.setupUi(self)
@@ -70,13 +71,10 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.buttonBox.rejected.connect(self.reject)
         self.buttonBox.accepted.connect(self.all_done)
 
-        # TODO: if a defined connection is broken in any way,
-        # this will raise an exception here
-        self.postGisConnectionComboBox.addItems(get_postgres_connections())
-
         # See if we can put back the old config
         s = QSettings()
         s.beginGroup('GeoCat')
+        dlg_width = s.value('settingsDialogWidth', 0, type=int)
         req_con = s.value('connection', '', type=str)
         req_met_tab_sc = s.value('metadataTableSchema', '', type=str)
         req_met_tab_ta = s.value('metadataTableName', '', type=str)
@@ -86,8 +84,23 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         req_lay_tab = s.value('gisLayerTableCol', '', type=str)
         req_lay_type = s.value('gisLayerTypeCol', '', type=str)
         req_ras_path = s.value('gisRasterPathCol', '', type=str)
+        ignore_col = s.value('ignoreCol', '', type=str)
+        private_col = s.value('privateCol', '', type=str)
+        vector_identifier = s.value('vectorIdentifier', 'vector', type=str)
+        raster_identifier = s.value('rasterIdentifier', 'raster', type=str)
+        wms_identifier = s.value('wmsIdentifier', 'wms', type=str)
 
+        if dlg_width != 0:
+            self.resize(dlg_width, self.height())
         self.block_widgets_signals(class_list=[QComboBox])
+
+        self.vectorIdentifierLineEdit.setText(vector_identifier)
+        self.rasterIdentifierLineEdit.setText(raster_identifier)
+        self.wmsIdentifierLineEdit.setText(wms_identifier)
+
+        # TODO: if a defined connection is broken in any way,
+        # this will raise an exception here
+        self.postGisConnectionComboBox.addItems(get_postgres_connections())
 
         self.postGisConnectionComboBox.setCurrentIndex(
             self.postGisConnectionComboBox.findText(req_con)
@@ -130,7 +143,15 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
             self.get_custom_columns()
 
-            self.block_widgets_signals(block=False, class_list=[QComboBox])
+            self.ignoreComboBox.setCurrentIndex(
+                self.ignoreComboBox.findText(ignore_col)
+            )
+
+            self.privateComboBox.setCurrentIndex(
+                self.privateComboBox.findText(private_col)
+            )
+
+        self.block_widgets_signals(block=False, class_list=[QComboBox])
 
     def on_connection_changed(self):
         self.refresh_schemas()
@@ -179,7 +200,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s = QSettings()
         s.beginGroup('GeoCat/CustomColumns')
         self.cust_cols = []
-        for i, cc in enumerate(s.childGroups()):
+        for i, cc in enumerate(sorted(s.childGroups(), key=int)):
             self.removeCustomColumnBtn.setEnabled(True)
             self.cust_cols.insert(i, {})
             s.beginGroup(cc)
@@ -280,6 +301,14 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.rasterPathComboBox.clear()
         self.rasterPathComboBox.addItems(cols)
 
+        self.ignoreComboBox.clear()
+        self.ignoreComboBox.addItem('--DISABLED--')
+        self.ignoreComboBox.addItems(cols)
+
+        self.privateComboBox.clear()
+        self.privateComboBox.addItem('--DISABLED--')
+        self.privateComboBox.addItems(cols)
+
     def check_custom_cols(self):
         cur = self._get_cur()
         cols = list_columns(cur,
@@ -316,7 +345,14 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s.setValue("GeoCat/gisLayerTableCol", self.layerTableNameComboBox.currentText())
         s.setValue("GeoCat/gisLayerTypeCol", self.layerTypeComboBox.currentText())
         s.setValue("GeoCat/gisRasterPathCol", self.rasterPathComboBox.currentText())
+        s.setValue("GeoCat/ignoreCol", self.ignoreComboBox.currentText())
+        s.setValue("GeoCat/privateCol", self.privateComboBox.currentText())
+        s.setValue("GeoCat/vectorIdentifier", self.vectorIdentifierLineEdit.text())
+        s.setValue("GeoCat/rasterIdentifier", self.rasterIdentifierLineEdit.text())
+        s.setValue("GeoCat/wmsIdentifier", self.wmsIdentifierLineEdit.text())
         self.set_custom_columns_settings()
+        # Save the dialog width too
+        s.setValue("GeoCat/settingsDialogWidth", self.width())
 
         self.accept()
 

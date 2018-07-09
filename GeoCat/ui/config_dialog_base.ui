@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>523</width>
-    <height>524</height>
+    <height>724</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,7 +41,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="postGisConnectionLabel">
         <property name="text">
-         <string>PostGIS Connection</string>
+         <string>PostGIS connection</string>
         </property>
        </widget>
       </item>
@@ -78,76 +78,7 @@
      </layout>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string>Required metadata table columns</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="1">
-       <widget class="QComboBox" name="layerSchemaNameComboBox"/>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="titleColumnLabel">
-        <property name="text">
-         <string>Title Column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="layerTableNameLabel">
-        <property name="text">
-         <string>Layer table column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="layerSchemaNameLabel">
-        <property name="text">
-         <string>Layer schema column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QComboBox" name="titleColumnComboBox"/>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="layerTableNameComboBox"/>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="abstractColumnLabel">
-        <property name="text">
-         <string>Abstract Column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QComboBox" name="abstractColumnComboBox"/>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Dataset type column</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="layerTypeComboBox"/>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="rasterPathComboBox"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Raster path column</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="11" column="0" colspan="2">
+   <item row="12" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -158,133 +89,311 @@
     </widget>
    </item>
    <item row="9" column="0" colspan="2">
-    <widget class="QGroupBox" name="groupBox_2">
-     <property name="title">
-      <string>Custom / additional metadata columns</string>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="2" column="0">
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <property name="bottomMargin">
-         <number>0</number>
+     <widget class="QWidget" name="scrollAreaWidgetContents_5">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>499</width>
+        <height>139</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="0" column="0">
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Custom / additional metadata columns</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="2" column="0">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QToolButton" name="addCustomColumnBtn">
+              <property name="minimumSize">
+               <size>
+                <width>30</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Add Custom Column</string>
+              </property>
+              <property name="text">
+               <string>+</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="removeCustomColumnBtn">
+              <property name="minimumSize">
+               <size>
+                <width>30</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Remove Custom Column</string>
+              </property>
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QFrame" name="customColsFrame">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_4">
+             <property name="margin">
+              <number>0</number>
+             </property>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Column</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Widget type</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Description</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="3">
+              <layout class="QVBoxLayout" name="customColsLayout">
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+      <zorder>groupBox_2</zorder>
+      <zorder>groupBox_2</zorder>
+      <zorder>groupBox_2</zorder>
+      <zorder>groupBox_2</zorder>
+      <zorder>verticalSpacer</zorder>
+     </widget>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Required metadata table columns</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="7" column="0">
+       <widget class="QLabel" name="titleColumnLabel">
+        <property name="text">
+         <string>Title column</string>
         </property>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QToolButton" name="addCustomColumnBtn">
-          <property name="minimumSize">
-           <size>
-            <width>30</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Add Custom Column</string>
-          </property>
-          <property name="text">
-           <string>+</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QToolButton" name="removeCustomColumnBtn">
-          <property name="minimumSize">
-           <size>
-            <width>30</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Remove Custom Column</string>
-          </property>
-          <property name="text">
-           <string>-</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QComboBox" name="titleColumnComboBox"/>
+      </item>
+      <item row="4" column="1">
+       <widget class="QComboBox" name="layerSchemaNameComboBox"/>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="layerTableNameLabel">
+        <property name="text">
+         <string>Layer table column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="layerSchemaNameLabel">
+        <property name="text">
+         <string>Layer schema column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="layerTypeComboBox"/>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Raster path column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QComboBox" name="abstractColumnComboBox"/>
+      </item>
+      <item row="5" column="1">
+       <widget class="QComboBox" name="layerTableNameComboBox"/>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="abstractColumnLabel">
+        <property name="text">
+         <string>Abstract column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QComboBox" name="rasterPathComboBox"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Dataset type column</string>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QFrame" name="customColsFrame">
-        <property name="frameShape">
-         <enum>QFrame::NoFrame</enum>
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Vector identifier</string>
         </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_4">
-         <property name="margin">
-          <number>0</number>
-         </property>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Widget type</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" colspan="3">
-          <layout class="QVBoxLayout" name="customColsLayout">
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-          </layout>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Description</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Column</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Raster identifier</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>WMS identifier</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="vectorIdentifierLineEdit"/>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="rasterIdentifierLineEdit"/>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="wmsIdentifierLineEdit"/>
       </item>
      </layout>
     </widget>
    </item>
-   <item row="10" column="1">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+   <item row="11" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_4">
+     <property name="title">
+      <string>Advanced</string>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="1" column="1">
+       <widget class="QComboBox" name="ignoreComboBox"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="toolTip">
+         <string>Optionally select a column of boolean type. Metadata rows with a value of TRUE here will not be shown in search results.</string>
+        </property>
+        <property name="text">
+         <string>Ignore column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="toolTip">
+         <string>Optionally select a column of boolean type. This value indicates whether Metadata rows with a value of TRUE here will not be shown in search results.</string>
+        </property>
+        <property name="text">
+         <string>Restricted column</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="privateComboBox"/>
+      </item>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>postGisConnectionComboBox</tabstop>
+  <tabstop>metadataTableSchemaComboBox</tabstop>
+  <tabstop>metadataTableNameComboBox</tabstop>
+  <tabstop>layerTypeComboBox</tabstop>
+  <tabstop>vectorIdentifierLineEdit</tabstop>
+  <tabstop>rasterIdentifierLineEdit</tabstop>
+  <tabstop>wmsIdentifierLineEdit</tabstop>
+  <tabstop>layerSchemaNameComboBox</tabstop>
+  <tabstop>layerTableNameComboBox</tabstop>
+  <tabstop>rasterPathComboBox</tabstop>
+  <tabstop>titleColumnComboBox</tabstop>
+  <tabstop>abstractColumnComboBox</tabstop>
+  <tabstop>scrollArea</tabstop>
+  <tabstop>addCustomColumnBtn</tabstop>
+  <tabstop>removeCustomColumnBtn</tabstop>
+  <tabstop>ignoreComboBox</tabstop>
+  <tabstop>privateComboBox</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

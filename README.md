@@ -1,26 +1,26 @@
 # Layer Metadata Search
 
-Layer Metadata Search is a plugin used to search GIS metadata. Layer Metadata Search can be used to search data describing the "who, what, where, when and how" of map layers. Layer Metadata Search was developed on behalf of Dartmoor and Exmoor National Parks, UK.
+*Layer Metadata Search* is a plugin used to search GIS metadata. *Layer Metadata Search* can be used to search data describing the "who, what, where, when and how" of map layers and is flexible so can support GEMINI 2 as well as other metadata standards. *Layer Metadata Search* was initially developed on behalf of Dartmoor and Exmoor National Parks in the UK.
 
 ![](./Images/geo_cat.png)
 
-Layer Metadata Search requires metadata to be stored in a PostgreSQL table with the following minimum information. Table column names need not be exactly the same as those described below.
+*Layer Metadata Search* requires that metadata be stored in a PostgreSQL table with the following **minimum** information. Table column names need not be the same as those described below.
 
-**title** - Human readable title of the dataset, e.g. *Ordnance Survey Open Roads* or *Aerial photos*.
+**Dataset type** - A column containing values describing whether the dataset is a PostGIS table, raster file or WMS layer.  The column could contain values like `PostGIS`, `Raster` and `WMS` and should not contain NULL values.
 
-**type** - Dataset type: *vector* or *raster*.
+**Title** - Human readable title of the dataset, e.g. *Ordnance Survey Open Roads* or *Aerial photos*.
 
-**abstract** - An abstract for the dataset, e.g. *A nationally consistent, high-level and shareable view of GB's road network. OS Open Roads is a connected road network for Great Britain. It contains all classified roads (such as motorways and A & B roads) as well as officially named unclassified roads.*
+**Abstract** - An abstract for the dataset, e.g. *A nationally consistent, high-level and shareable view of GB's road network. OS Open Roads is a connected road network for Great Britain. It contains all classified roads (such as motorways and A & B roads) as well as officially named unclassified roads.*
 
-**other fields** - The plugin can also search on and display other custom metadata fields - described later.
+**Layer schema** - For PostGIS datasets, the schema containing the table.
 
-**schema** - For vector datasets, the PostgreSQL schema containing the PostGIS table.
+**Layer table** - For PostGIS datasets, the name of the table.
 
-**table** - For vector datasets, the name of the PostGIS table.
+**Raster path** - For raster file and WMS datasets, the path or URL of the dataset.
 
-**path** - For raster datasets, the path to the raster dataset.
+**Other fields** - The plugin can also search on and display other custom metadata fields - described later.
 
-Once configured, Layer Metadata Search will search for datasets using the title, abstract and any other custom metadata fields.
+Once configured, *Layer Metadata Search* will search for datasets using all configured metadata fields.
 
 
 ## Configuration
@@ -29,52 +29,54 @@ Layer Metadata Search can be configured in QGIS via `Plugins` > `Layer Metadata 
 
 ![](./Images/geo_cat_config.png)
 
-The *Custom / additional metadata columns* section of the configuration is described later. 
+Simply complete the *Metadata table* and *Required metadata table columns* sections.  The *Vector*, *Raster* and *WMS identifier* entries should be populated with the values in the *Dataset type* column which correspond with each of the dataset types. 
+
+The *Custom / additional metadata columns* and *Advanced* sections of the configuration are described later. 
 
 
-## Metadata Preparation
+## Metadata preparation
 
-This section describes how to set up a PostgreSQL table for the matadata.
+This section describes how to set up a PostgreSQL table for the metadata.
 
 First, create a new metadata table and schema if required:
 
-	CREATE SCHEMA layer_metadata_search;
-	CREATE TABLE layer_metadata_search.metadata
+	CREATE SCHEMA metadata;
+	CREATE TABLE metadata.all_metadata
     (
       id serial NOT NULL,
-      name text,
-      type text NOT NULL DEFAULT 'vector'::text,
-      abstract text,
-      schema text, -- required for vector datasets
-      "table" text, -- required for vector datasets
-      path text, -- required for raster datasets
-      keywords text, -- optional, one of the custom columns
-      mod_date date, -- optional
-      tstamp timestamp without time zone, -- optional
-      -- insert other custom columns here as required
-      CONSTRAINT metadata_pkey PRIMARY KEY (id)
+      dataset_type text NOT NULL DEFAULT 'PostGIS Table'::text,
+      schema_name text, -- required for vector datasets
+      table_name text, -- required for vector datasets
+      path text, -- required for raster and WMS datasets
+      gem_title text,
+      gem_abstract text,
+	  -- define any additional, custom columns here as required
+      CONSTRAINT all_metadata_pkey PRIMARY KEY (id)
     );
+
 
 ### Adding vector layers
 
 With the table created we can automatically populate it with layers we already have in our database. The following query will add rows to the metadata table for any tables not already featured in the metadata table:
 
-	INSERT INTO layer_metadata_search.metadata
-		(schema, "table")
+	INSERT INTO metadata.all_metadata
+		(dataset_type, schema_name, table_name)
 	SELECT
+		'PostGIS Table',
 		f_table_schema,
 		f_table_name
 	FROM
-		geometry_columns LEFT OUTER JOIN layer_metadata_search.metadata ON
-			f_table_schema = "schema" AND 
-			f_table_name = "table"
+		geometry_columns LEFT OUTER JOIN metadata.all_metadata ON
+			f_table_schema = schema_name AND 
+			f_table_name = table_name
 	WHERE
-		"schema" IS NULL AND
-		"table" IS NULL;
+		schema_name IS NULL AND
+		table_name IS NULL;
 
-Now we can simply open the metadata table in pgAdminIII and add the titles and abstracts:
+Now we can simply open the metadata table in pgAdmin and add the titles and abstracts (your table definition may vary):
 
 ![](./Images/pgadmin.png)
+
 
 ### Adding raster layers
 
@@ -88,17 +90,17 @@ For layers consisting of a single image there is no need to create a VRT file.
 
 For raster files, the following columns of the metadata table should be populated as a minimum:
 
- * name (user-friendly name)
- * type (set to *raster*)
+ * gem_title (user-friendly name)
+ * dataset_type (set to, for example, `Raster File`)
  * path (absolute path to the raster file)
 
 
-## Using Custom Metadata Fields
+## Custom metadata fields and advanced settings
 
-This section describes how to make use of custom metadata fields in the Layer Metadata Search plugin.
+To search and display custom metadata fields:
 
 1. First ensure that the metadata table contains the fields you wish to work with.
-1. Now open up the configuration dialog:
+2. Open up the configuration dialog:
 
 	![](./Images/geo_cat_config_custom.png)
 
@@ -112,18 +114,8 @@ This section describes how to make use of custom metadata fields in the Layer Me
 
 	*Please note that when using the DateEdit widget the source column in the database should be of type `date`*
 
+Under *Advanced* there are options for and *Ignore* column and *Restricted* column.
 
-## Upgrading from previous versions
+Rows in the metadata table with their *Ignore* column set to `TRUE` will not appear in search results. The *Ignore* column should be of type `boolean`. Set this configuration option to `--DISABLED--` to disable this behaviour.
 
-If you have an existing metadata table which was created before raster support was added to this plugin, you will need to modify the metadata table in the following manner:
-
-    -- Add a column for layer type (vector/raster)
-    ALTER TABLE layer_metadata_search.metadata ADD COLUMN type text NOT NULL default 'vector';
-
-    -- Add a column for raster file path
-    ALTER TABLE layer_metadata_search.metadata ADD COLUMN path text;
-
-    -- Set the type for any existing vector layers
-    UPDATE layer_metadata_search.metadata SET type = 'vector';
-
-When adding a dataset, always specify its type as either *vector* or *raster*.
+Rows in the metadata table with their *Restricted* column set to `TRUE` will not appear in search results unless the user has enabled the *Also show results I may not have access to* option. This function may be useful if you wish users to be able to browse all metadata, even for tables which they may not have database permissions to load. The *Restricted* column should be of type `boolean`. Set this configuration option to `--DISABLED--` to disable this behaviour.
