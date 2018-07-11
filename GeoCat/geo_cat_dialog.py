@@ -510,8 +510,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 uri.setConnection(con_info['host'],
                                   str(con_info['port']),
                                   con_info['database'],
-                                  con_info['user'],
-                                  con_info['password'])
+                                  con_info.get('user', None),
+                                  con_info.get('password', None))
 
                 display_geom = res['geom_type'].lower()
                 if display_geom.startswith('multi'):

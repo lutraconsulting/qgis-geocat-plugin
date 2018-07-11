@@ -11,7 +11,7 @@ name=Layer Metadata Search
 qgisMinimumVersion=2.0
 qgisMaximumVersion=2.99
 description=Search for PostGIS tables using metadata
-version=2.0.1
+version=2.0.2
 author=Lutra Consulting for Dartmoor National Park Authority
 email=info@lutraconsulting.co.uk
 
@@ -24,7 +24,10 @@ repository=https://github.com/lutraconsulting/qgis-geocat-plugin
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog=2.0 Feature release
+changelog=2.0.2 Bug fixes:
+ - Fixed crash on loading postgis layers using AD auth
+ <p>2.0.1 ???
+ <p>2.0 Feature release
  - Implemented browse all metadata functionality
  - Updated documentation
  - Fixed issue with details not showing on row selection
