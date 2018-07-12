@@ -183,7 +183,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         con_info = get_postgres_conn_info(self.config['connection'])
         if not self.config['connection']:
             return None
-        if self.db_con is None:
+        if self.db_con is None or self.db_con.closed != 0:
+            # Get a connection if we do not already have one or if it's been closed
             self.db_con = get_connection(con_info)
         if dict:
             return self.db_con.cursor(cursor_factory=DictCursor)
@@ -519,7 +520,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 uri.setDataSource(res['schema'],
                                   res['table'],
                                   res['geom_col'])
-                layer_name = '%s (%s)' % (res['title'], display_geom)
+                layer_title = res['title']
+                if layer_title is None or layer_title == '':
+                    layer_title = res['table']
+                layer_name = '%s (%s)' % (layer_title, display_geom)
                 vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
                 if vlayer.isValid():
                     QgsMapLayerRegistry.instance().addMapLayer(vlayer)
