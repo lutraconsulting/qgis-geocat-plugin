@@ -299,11 +299,11 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 gc.type""" + private_select + cc_select + """
                 """ + meta_select + """
             FROM
-                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
-                LEFT JOIN public.geometry_columns AS gc
-				ON gc.f_table_schema = cat.""" + self.config['schema_col'] + """
-				AND gc.f_table_name = cat.""" + self.config['table_col'] + """
+                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
+                public.geometry_columns AS gc
             WHERE
+				gc.f_table_schema = cat.""" + self.config['schema_col'] + """ AND
+				gc.f_table_name = cat.""" + self.config['table_col'] + """ AND
                 """ + qry_where + """
                 cat.""" + self.config['ignore_col'] + """ != TRUE AND
                 cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
