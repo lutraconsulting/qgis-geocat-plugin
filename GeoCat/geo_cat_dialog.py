@@ -107,8 +107,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         # Keyboard shortcut to focus and highlight search text
         self.connect(QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F), self), SIGNAL('activated()'), self.ctrl_f_pressed)
 
-        # import pydevd; pydevd.settrace(suspend=False)
-
     def search_push_button_clicked(self, checked):
         self.search()
 
@@ -220,6 +218,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         :return:
         """
+
         cur = self._db_cur()
         if not cur:
             self.uc.bar_warn('There is no connection defined.')
@@ -281,6 +280,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if self.config['private_col'] != '""' and self.config['private_col'] != '"--DISABLED--"':
             private_select = ', ' + self.config['private_col'] + ' AS private'
 
+        ignore_clause = 'TRUE'
+        if self.config['ignore_col'] != '""' and self.config['ignore_col'] != '"--DISABLED--"':
+            ignore_clause = """ cat.""" + self.config['ignore_col'] + """ != TRUE"""
+
         qry_where = """"""
         if use_where_clause:
             qry_where = """(
@@ -304,8 +307,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             WHERE
 				gc.f_table_schema = cat.""" + self.config['schema_col'] + """ AND
 				gc.f_table_name = cat.""" + self.config['table_col'] + """ AND
-                """ + qry_where + """
-                cat.""" + self.config['ignore_col'] + """ != TRUE AND
+                """ + qry_where + ignore_clause + """ AND
                 cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
                 """
         if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause:
@@ -368,7 +370,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                             cat.""" + self.config['type_col'] + """ = %(raster_identifier)s OR
                             cat.""" + self.config['type_col'] + """ = %(wms_identifier)s
                         ) AND
-                        cat.""" + self.config['ignore_col'] + """ != TRUE
+                        """ + ignore_clause + """
                     """ + qry_where
         if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause:
             qry += """ AND """ + self.config['private_col'] + """ = FALSE"""
