@@ -49,6 +49,7 @@ def current_postgres_connection():
     return settings.value("connection", "", type=str)
 """
 
+
 def get_postgres_conn_info(selected):
     """ Read PostgreSQL connection details from QSettings stored by QGIS
     """
@@ -73,6 +74,7 @@ def _quote(identifier):
     """ quote identifier """
     return u'"%s"' % identifier.replace('"', '""')
 
+
 def _quote_str(txt):
     """ make the string safe - replace ' with '' """
     return txt.replace("'", "''")
@@ -87,6 +89,7 @@ def list_schemas(cursor):
     names = map(lambda row: row[0], cursor.fetchall())
     return sorted(names)
 
+
 def list_tables(cursor, schema):
     sql = """SELECT pg_class.relname
                 FROM pg_class
@@ -96,6 +99,7 @@ def list_tables(cursor, schema):
     cursor.execute(sql)
     names = map(lambda row: row[0], cursor.fetchall())
     return sorted(names)
+
 
 def list_columns(cursor, schema, table):
     sql = """SELECT a.attname AS column_name

@@ -50,6 +50,7 @@ First, create a new metadata table and schema if required:
       path text, -- required for raster and WMS datasets
       gem_title text,
       gem_abstract text,
+      qgis_pg_connection text, -- preferred PostGIS connection for loading loading layers
 	  -- define any additional, custom columns here as required
       CONSTRAINT all_metadata_pkey PRIMARY KEY (id)
     );
@@ -114,7 +115,7 @@ To search and display custom metadata fields:
 
 	*Please note that when using the DateEdit widget the source column in the database should be of type `date`*
 
-Under *Advanced* there are options for and *Ignore* column and *Restricted* column.
+Under *Advanced* there are options for *Ignore*, *Restricted* and *QGIS PostGIS connection* column.
 
 Rows in the metadata table with their *Ignore* column set to `TRUE` will not appear in search results. The *Ignore* column should be of type `boolean`. Set this configuration option to `--DISABLED--` to disable this behaviour.
 

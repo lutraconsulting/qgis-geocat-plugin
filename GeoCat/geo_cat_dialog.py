@@ -173,6 +173,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['rpath_col'] = '"%s"' % s.value('GeoCat/gisRasterPathCol', '', type=str)
         self.config['ignore_col'] = '"%s"' % s.value('GeoCat/ignoreCol', '', type=str)
         self.config['private_col'] = '"%s"' % s.value('GeoCat/privateCol', '', type=str)
+        self.config['qgis_connection_col'] = '"%s"' % s.value('GeoCat/qgisConnectionCol', '', type=str)
         self.config['vector_identifier'] = s.value('GeoCat/vectorIdentifier', 'vector', type=str)
         self.config['raster_identifier'] = s.value('GeoCat/rasterIdentifier', 'raster', type=str)
         self.config['wms_identifier'] = s.value('GeoCat/wmsIdentifier', 'wms', type=str)
@@ -280,6 +281,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if self.config['private_col'] != '""' and self.config['private_col'] != '"--DISABLED--"':
             private_select = ', ' + self.config['private_col'] + ' AS private'
 
+        qgis_connection_select = ', NULL AS qgis_connection'
+        if self.config['qgis_connection_col'] != '""' and self.config['qgis_connection_col'] != '"--DISABLED--"':
+            qgis_connection_select = ', ' + self.config['qgis_connection_col'] + ' AS qgis_connection'
+
         ignore_clause = 'TRUE'
         if self.config['ignore_col'] != '""' and self.config['ignore_col'] != '"--DISABLED--"':
             ignore_clause = """ cat.""" + self.config['ignore_col'] + """ != TRUE"""
@@ -299,14 +304,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 cat.""" + self.config['schema_col'] + """,
                 cat.""" + self.config['table_col'] + """,
                 gc.f_geometry_column,
-                gc.type""" + private_select + cc_select + """
+                gc.type""" + private_select + qgis_connection_select + cc_select + """
                 """ + meta_select + """
             FROM
                 """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
                 public.geometry_columns AS gc
             WHERE
-				gc.f_table_schema = cat.""" + self.config['schema_col'] + """ AND
-				gc.f_table_name = cat.""" + self.config['table_col'] + """ AND
+                gc.f_table_schema = cat.""" + self.config['schema_col'] + """ AND
+                gc.f_table_name = cat.""" + self.config['table_col'] + """ AND
                 """ + qry_where + ignore_clause + """ AND
                 cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
                 """
@@ -324,7 +329,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         for row in cur.fetchall():
             res = dict()
-            title, abstract, schema, table, geom_col, ty, private = row[:7]
+            title, abstract, schema, table, geom_col, ty, private, qgis_con = row[:8]
             for c in self.cust_cols:
                 col_name = c['col']
                 res[col_name] = row[col_name]
@@ -340,9 +345,11 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 res['private'] = 'Yes'
             else:
                 res['private'] = 'No'
+            res['qgis_connection'] = qgis_con
             # Replace None types with '' for better usability
             for k in res.keys():
-                if res[k] is None: res[k] = ''
+                if res[k] is None:
+                    res[k] = ''
             self.search_results.append(res)
 
         # search rasters and WMS
@@ -395,13 +402,15 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             res['geom_type'] = 'N/A'
             res['schema'] = 'N/A'
             res['table'] = 'N/A'
+            res['qgis_connection'] = 'N/A'
             if private:
                 res['private'] = 'Yes'
             else:
                 res['private'] = 'No'
             # Replace None types with '' for better usability
             for k in res.keys():
-                if res[k] is None: res[k] = ''
+                if res[k] is None:
+                    res[k] = ''
             self.search_results.append(res)
 
         self.appendToResultTable(include_private=self.showPrivateCheckBox.checkState())
@@ -430,7 +439,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             for cc in self.cust_cols:
                 labels.append(cc['desc'])
             # Other information
-            labels.extend(['Restricted?', 'Schema', 'Table', 'Path'])
+            labels.extend(['Restricted?', 'Schema', 'Table', 'Path', 'QGIS PG Connection'])
             self.table_model.setHorizontalHeaderLabels(labels)
             self.resultsTable.resizeColumnsToContents()
 
@@ -476,6 +485,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 r_path_text = 'N/A'
             new_item = QStandardItem(r_path_text)
             row_items.append(new_item)
+            new_item = QStandardItem(item['qgis_connection'])
+            row_items.append(new_item)
 
             self.table_model.appendRow(row_items)
             item = self.table_model.item(row)
@@ -506,10 +517,15 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             item = self.table_model.item(index.row())
             ix = self.tableToResults[item]
             res = self.search_results[ix]
+
             if res['type'] == 'vector':
                 # Add the vector layer
+                qgis_connection = res['qgis_connection']
                 uri = QgsDataSourceURI()
-                con_info = get_postgres_conn_info(self.config['connection'])
+                if qgis_connection:
+                    con_info = get_postgres_conn_info(qgis_connection)
+                else:
+                    con_info = get_postgres_conn_info(self.config['connection'])
                 uri.setConnection(con_info['host'],
                                   str(con_info['port']),
                                   con_info['database'],
@@ -539,13 +555,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 self.iface.addRasterLayer(res['rpath'], layer_name)
 
     def display_details_table(self):
-        selected_rows  = self.resultsTable.selectionModel().selectedRows()
+        selected_rows = self.resultsTable.selectionModel().selectedRows()
         if len(selected_rows):
             index = selected_rows[0]
             item = self.table_model.item(index.row())
             ix = self.tableToResults[item]
             self.display_details(ix)
-
 
     def display_details(self, current_row):
         """
