@@ -40,7 +40,7 @@ This section describes how to set up a PostgreSQL table for the metadata.
 
 First, create a new metadata table and schema if required:
 
-	CREATE SCHEMA metadata;
+	CREATE SCHEMA IF NOT EXISTS metadata;
 	CREATE TABLE metadata.all_metadata
     (
       id serial NOT NULL,
@@ -50,6 +50,9 @@ First, create a new metadata table and schema if required:
       path text, -- required for raster and WMS datasets
       gem_title text,
       gem_abstract text,
+      ignore boolean DEFAULT false, -- optional: boolean flag as to whether row should be ignored
+      pivate boolean DEFAULT false, -- optional: boolean flag as to whether this dataset might have restricted access
+      qgis_pg_connection text, -- optional: preferred PostGIS connection for loading loading layers
 	  -- define any additional, custom columns here as required
       CONSTRAINT all_metadata_pkey PRIMARY KEY (id)
     );
@@ -114,8 +117,12 @@ To search and display custom metadata fields:
 
 	*Please note that when using the DateEdit widget the source column in the database should be of type `date`*
 
-Under *Advanced* there are options for and *Ignore* column and *Restricted* column.
+Under *Advanced* there are options for *Ignore*, *Restricted* and *QGIS PostGIS connection* column.
 
 Rows in the metadata table with their *Ignore* column set to `TRUE` will not appear in search results. The *Ignore* column should be of type `boolean`. Set this configuration option to `--DISABLED--` to disable this behaviour.
 
 Rows in the metadata table with their *Restricted* column set to `TRUE` will not appear in search results unless the user has enabled the *Also show results I may not have access to* option. This function may be useful if you wish users to be able to browse all metadata, even for tables which they may not have database permissions to load. The *Restricted* column should be of type `boolean`. Set this configuration option to `--DISABLED--` to disable this behaviour.
+
+The Layer Metadata Search tool also supports the searching of layers from different databases, however, all metadata must be stored in a single metadata table in one database. To include a metadata row for a table in another database, simple fill out its metadata as normal including its schema and table name in the other database.  Also add the name of the **PostGIS connection as named in QGIS** to the `qgis_pg_connection` column (see above table structure) and also set *QGIS PostGIS connection column* to `qgis_pg_connection`.
+
+Now users will be able to locate tables in other databases and the Layer Metadata Search tool will use the connection details from within QGIS for the named connection specified. 

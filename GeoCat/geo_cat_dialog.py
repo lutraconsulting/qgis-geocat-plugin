@@ -173,6 +173,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['rpath_col'] = '"%s"' % s.value('GeoCat/gisRasterPathCol', '', type=str)
         self.config['ignore_col'] = '"%s"' % s.value('GeoCat/ignoreCol', '', type=str)
         self.config['private_col'] = '"%s"' % s.value('GeoCat/privateCol', '', type=str)
+        self.config['qgis_connection_col'] = '"%s"' % s.value('GeoCat/qgisConnectionCol', '', type=str)
         self.config['vector_identifier'] = s.value('GeoCat/vectorIdentifier', 'vector', type=str)
         self.config['raster_identifier'] = s.value('GeoCat/rasterIdentifier', 'raster', type=str)
         self.config['wms_identifier'] = s.value('GeoCat/wmsIdentifier', 'wms', type=str)
@@ -194,7 +195,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         QDesktopServices.openUrl(QUrl(help_url))
 
     def get_metadata_table_cols(self, cur):
-        qry = "SELECT column_name FROM information_schema.columns "+ \
+        qry = "SELECT column_name FROM information_schema.columns " + \
                       "WHERE table_schema = {} AND table_name = {}".format(self.config['cat_schema'], self.config['cat_table']).replace('\"', '\'')
         try:
             cur.execute(qry)
@@ -206,31 +207,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.search_results = []
             return
 
-    def search(self, use_where_clause=True):
-        """
-            Takes the user input and searches the metadata table (name and abstract columns), returning
-            results for display.  The following details are returned and stored:
-                Title
-                Abstract
-                Date published
-                Schema
-                Table
-
-        :return:
-        """
-
-        cur = self._db_cur()
-        if not cur:
-            self.uc.bar_warn('There is no connection defined.')
-            return
-
-        search_text = self.searchLineEdit.text()
-
-        if search_text.strip() == '':
-            self.clear_results()
-            if use_where_clause:
-                return
-
+    def process_search_text(self, search_text):
         wildcarded_search_string = ''
         for part in search_text.split():
             wildcarded_search_string += '%' + part
@@ -239,7 +216,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                       'vector_identifier': self.config['vector_identifier'],
                       'raster_identifier': self.config['raster_identifier'],
                       'wms_identifier': self.config['wms_identifier']}
+        return query_dict
 
+    def vector_query(self, cur, use_where_clause):
         # parts of the QUERY for custom columns
         cc_select = ''
         cc_where = ''
@@ -261,7 +240,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                        self.config['private_col'].strip('"'),
                        self.config['type_col'].strip('"'),
                        self.config['rpath_col'].strip('"')]
-        # TODO clean up redundant cols in query
+
         self.meta_cols = self.get_metadata_table_cols(cur)
         for col in self.meta_cols:
             if not col:
@@ -277,8 +256,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             meta_where += '\nOR cat.{}::text ILIKE %(search_text)s'.format(col_name)
 
         private_select = ', FALSE AS private'
+
         if self.config['private_col'] != '""' and self.config['private_col'] != '"--DISABLED--"':
             private_select = ', ' + self.config['private_col'] + ' AS private'
+
+        qgis_connection_select = ', NULL AS qgis_connection'
+        if self.config['qgis_connection_col'] != '""' and self.config['qgis_connection_col'] != '"--DISABLED--"':
+            qgis_connection_select = ', ' + self.config['qgis_connection_col'] + ' AS qgis_connection'
 
         ignore_clause = 'TRUE'
         if self.config['ignore_col'] != '""' and self.config['ignore_col'] != '"--DISABLED--"':
@@ -287,33 +271,113 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         qry_where = """"""
         if use_where_clause:
             qry_where = """(
-                                cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
-                                cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
-                                """ + cc_where + """
-                                """ + meta_where + """
-                            ) AND """
+                                        cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                                        cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                                        """ + cc_where + """
+                                        """ + meta_where + """
+                                    ) AND """
         qry = """
-            SELECT
-                cat.""" + self.config['title_col'] + """,
-                cat.""" + self.config['abstract_col'] + """,
-                cat.""" + self.config['schema_col'] + """,
-                cat.""" + self.config['table_col'] + """,
-                gc.f_geometry_column,
-                gc.type""" + private_select + cc_select + """
-                """ + meta_select + """
-            FROM
-                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat,
-                public.geometry_columns AS gc
-            WHERE
-				gc.f_table_schema = cat.""" + self.config['schema_col'] + """ AND
-				gc.f_table_name = cat.""" + self.config['table_col'] + """ AND
-                """ + qry_where + ignore_clause + """ AND
-                cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
-                """
-        if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause:
+                    SELECT
+                        cat.""" + self.config['title_col'] + """,
+                        cat.""" + self.config['abstract_col'] + """,
+                        cat.""" + self.config['schema_col'] + """,
+                        cat.""" + self.config['table_col'] + """
+                        """ + private_select + qgis_connection_select + cc_select + """
+                        """ + meta_select + """
+                    FROM
+                        """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
+                    WHERE
+                        """ + qry_where + ignore_clause + """ AND
+                        cat.""" + self.config['type_col'] + """ = %(vector_identifier)s
+                        """
+        if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause and self.config['private_col'] != '"--DISABLED--"':
             qry += """ AND """ + self.config['private_col'] + """ = FALSE"""
+
+        return qry, cc_select, cc_where, private_select, ignore_clause
+
+    def raster_query(self, cc_select, cc_where, private_select, ignore_clause, use_where_clause):
+        qry_where = """"""
+        if use_where_clause:
+            qry_where = """ AND (
+                                        cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
+                                        cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
+                                        """ + cc_where + """
+                                    )"""
+        qry = """
+                            SELECT
+                                cat.""" + self.config['title_col'] + """,
+                                cat.""" + self.config['abstract_col'] + """,
+                                cat.""" + self.config['rpath_col'] + """,
+                                CASE WHEN cat.""" + self.config['type_col'] + """ = %(raster_identifier)s THEN
+                                    'raster'
+                                ELSE
+                                    'wms'
+                                END AS type""" + private_select + cc_select + """
+                            FROM
+                                """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
+                            WHERE
+                                (
+                                    cat.""" + self.config['type_col'] + """ = %(raster_identifier)s OR
+                                    cat.""" + self.config['type_col'] + """ = %(wms_identifier)s
+                                ) AND
+                                """ + ignore_clause + """
+                            """ + qry_where
+        if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause and self.config['private_col'] != '"--DISABLED--"':
+            qry += """ AND """ + self.config['private_col'] + """ = FALSE"""
+
+        return qry
+
+    def find_geom_and_type(self, table_schema, table_name, qgis_connection):
+        qry = """
+        SELECT 
+            gc.f_geometry_column,
+            gc.type
+        FROM
+            public.geometry_columns AS gc
+        WHERE
+            gc.f_table_schema = '{}' AND
+            gc.f_table_name = '{}'
+        """.format(table_schema, table_name)
+
+        if not qgis_connection:
+            cur = self._db_cur(dict=False)
+        else:
+            con_info = get_postgres_conn_info(qgis_connection)
+            db_con = get_connection(con_info)
+            cur = db_con.cursor()
+        cur.execute(qry)
+        geom_and_type = cur.fetchone()
+        if not geom_and_type:
+            geom_and_type = (None, None)
+        return geom_and_type
+
+    def search(self, use_where_clause=True):
+        """
+        Takes the user input and searches the metadata table (name and abstract columns), returning
+        results for display. The following details are returned and stored:
+        Title
+        Abstract
+        Date published
+        Schema
+        Table
+        """
+        cur = self._db_cur()
+        if not cur:
+            self.uc.bar_warn('There is no connection defined.')
+            return
+
+        search_text = self.searchLineEdit.text()
+        if search_text.strip() == '':
+            self.clear_results()
+            if use_where_clause:
+                return
+
+        query_dict = self.process_search_text(search_text)
+
+        # search vectors
+        vector_qry, cc_select, cc_where, private_select, ignore_clause = self.vector_query(cur, use_where_clause)
         try:
-            cur.execute(qry, query_dict)
+            cur.execute(vector_qry, query_dict)
         except Exception:
             self.uc.bar_warn('Querying the metadata table failed! See logs and check your settings.')
             self.uc.log_info(traceback.format_exc())
@@ -321,10 +385,23 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             return
 
         self.clear_results()
+        vector_results = cur.fetchall()
 
-        for row in cur.fetchall():
+        # search rasters and WMS
+        raster_qry = self.raster_query(cc_select, cc_where, private_select, ignore_clause, use_where_clause)
+        try:
+            cur.execute(raster_qry, query_dict)
+        except Exception:
+            self.uc.bar_warn('Querying the metadata table for rasters failed! See logs and check your settings.')
+            self.uc.log_info(traceback.format_exc())
+            return
+
+        raster_results = cur.fetchall()
+
+        for row in vector_results:
             res = dict()
-            title, abstract, schema, table, geom_col, ty, private = row[:7]
+            title, abstract, schema, table, private, qgis_con = row[:6]
+            geom_col, ty = self.find_geom_and_type(schema, table, qgis_con)
             for c in self.cust_cols:
                 col_name = c['col']
                 res[col_name] = row[col_name]
@@ -334,54 +411,21 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             res['schema'] = schema
             res['table'] = table
             res['rpath'] = None
+
             res['geom_col'] = geom_col
             res['geom_type'] = ty
             if private:
                 res['private'] = 'Yes'
             else:
                 res['private'] = 'No'
+            res['qgis_connection'] = qgis_con
             # Replace None types with '' for better usability
             for k in res.keys():
-                if res[k] is None: res[k] = ''
+                if res[k] is None:
+                    res[k] = ''
             self.search_results.append(res)
 
-        # search rasters and WMS
-        qry_where = """"""
-        if use_where_clause:
-            qry_where = """ AND (
-                                cat.""" + self.config['title_col'] + """ ILIKE %(search_text)s OR
-                                cat.""" + self.config['abstract_col'] + """ ILIKE %(search_text)s
-                                """ + cc_where + """
-                            )"""
-        qry = """
-                    SELECT
-                        cat.""" + self.config['title_col'] + """,
-                        cat.""" + self.config['abstract_col'] + """,
-                        cat.""" + self.config['rpath_col'] + """,
-                        CASE WHEN cat.""" + self.config['type_col'] + """ = %(raster_identifier)s THEN
-                            'raster'
-                        ELSE
-                            'wms'
-                        END AS type""" + private_select + cc_select + """
-                    FROM
-                        """ + self.config['cat_schema'] + """.""" + self.config['cat_table'] + """ AS cat
-                    WHERE
-                        (
-                            cat.""" + self.config['type_col'] + """ = %(raster_identifier)s OR
-                            cat.""" + self.config['type_col'] + """ = %(wms_identifier)s
-                        ) AND
-                        """ + ignore_clause + """
-                    """ + qry_where
-        if self.showPrivateCheckBox.checkState() == Qt.Unchecked and use_where_clause:
-            qry += """ AND """ + self.config['private_col'] + """ = FALSE"""
-        try:
-            cur.execute(qry, query_dict)
-        except Exception:
-            self.uc.bar_warn('Querying the metadata table for rasters failed! See logs and check your settings.')
-            self.uc.log_info(traceback.format_exc())
-            return
-
-        for row in cur.fetchall():
+        for row in raster_results:
             res = dict()
             title, abstract, rpath, subtype, private = row[:5]
             for c in self.cust_cols:
@@ -395,13 +439,15 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             res['geom_type'] = 'N/A'
             res['schema'] = 'N/A'
             res['table'] = 'N/A'
+            res['qgis_connection'] = 'N/A'
             if private:
                 res['private'] = 'Yes'
             else:
                 res['private'] = 'No'
             # Replace None types with '' for better usability
             for k in res.keys():
-                if res[k] is None: res[k] = ''
+                if res[k] is None:
+                    res[k] = ''
             self.search_results.append(res)
 
         self.appendToResultTable(include_private=self.showPrivateCheckBox.checkState())
@@ -430,7 +476,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             for cc in self.cust_cols:
                 labels.append(cc['desc'])
             # Other information
-            labels.extend(['Restricted?', 'Schema', 'Table', 'Path'])
+            labels.extend(['Restricted?', 'Schema', 'Table', 'Path', 'QGIS PG Connection'])
             self.table_model.setHorizontalHeaderLabels(labels)
             self.resultsTable.resizeColumnsToContents()
 
@@ -476,6 +522,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 r_path_text = 'N/A'
             new_item = QStandardItem(r_path_text)
             row_items.append(new_item)
+            new_item = QStandardItem(item['qgis_connection'])
+            row_items.append(new_item)
 
             self.table_model.appendRow(row_items)
             item = self.table_model.item(row)
@@ -506,10 +554,15 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             item = self.table_model.item(index.row())
             ix = self.tableToResults[item]
             res = self.search_results[ix]
+
             if res['type'] == 'vector':
                 # Add the vector layer
+                qgis_connection = res['qgis_connection']
                 uri = QgsDataSourceURI()
-                con_info = get_postgres_conn_info(self.config['connection'])
+                if qgis_connection:
+                    con_info = get_postgres_conn_info(qgis_connection)
+                else:
+                    con_info = get_postgres_conn_info(self.config['connection'])
                 uri.setConnection(con_info['host'],
                                   str(con_info['port']),
                                   con_info['database'],
@@ -539,13 +592,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 self.iface.addRasterLayer(res['rpath'], layer_name)
 
     def display_details_table(self):
-        selected_rows  = self.resultsTable.selectionModel().selectedRows()
+        selected_rows = self.resultsTable.selectionModel().selectedRows()
         if len(selected_rows):
             index = selected_rows[0]
             item = self.table_model.item(index.row())
             ix = self.tableToResults[item]
             self.display_details(ix)
-
 
     def display_details(self, current_row):
         """

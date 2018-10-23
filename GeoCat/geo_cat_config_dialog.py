@@ -86,6 +86,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         req_ras_path = s.value('gisRasterPathCol', '', type=str)
         ignore_col = s.value('ignoreCol', '', type=str)
         private_col = s.value('privateCol', '', type=str)
+        qgis_connection = s.value('qgisConnectionCol', '', type=str)
         vector_identifier = s.value('vectorIdentifier', 'vector', type=str)
         raster_identifier = s.value('rasterIdentifier', 'raster', type=str)
         wms_identifier = s.value('wmsIdentifier', 'wms', type=str)
@@ -149,6 +150,10 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
             self.privateComboBox.setCurrentIndex(
                 self.privateComboBox.findText(private_col)
+            )
+
+            self.qgis_connection_cbo.setCurrentIndex(
+                self.qgis_connection_cbo.findText(qgis_connection)
             )
 
         self.block_widgets_signals(block=False, class_list=[QComboBox])
@@ -309,6 +314,10 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.privateComboBox.addItem('--DISABLED--')
         self.privateComboBox.addItems(cols)
 
+        self.qgis_connection_cbo.clear()
+        self.qgis_connection_cbo.addItem('--DISABLED--')
+        self.qgis_connection_cbo.addItems(cols)
+
     def check_custom_cols(self):
         cur = self._get_cur()
         cols = list_columns(cur,
@@ -324,7 +333,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
                 raise CustomColumnException
 
             col_name = self.findChild(QComboBox, 'cc_col_cbo_{}'.format(i)).currentText()
-            if not col_name in cols:
+            if col_name not in cols:
                 msg = 'Metadata table column not set. Make a choice or remove the custom column.'
                 self.uc.log_info(msg)
                 self.uc.show_warn(msg)
@@ -347,6 +356,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s.setValue("GeoCat/gisRasterPathCol", self.rasterPathComboBox.currentText())
         s.setValue("GeoCat/ignoreCol", self.ignoreComboBox.currentText())
         s.setValue("GeoCat/privateCol", self.privateComboBox.currentText())
+        s.setValue("GeoCat/qgisConnectionCol", self.qgis_connection_cbo.currentText())
         s.setValue("GeoCat/vectorIdentifier", self.vectorIdentifierLineEdit.text())
         s.setValue("GeoCat/rasterIdentifier", self.rasterIdentifierLineEdit.text())
         s.setValue("GeoCat/wmsIdentifier", self.wmsIdentifierLineEdit.text())
