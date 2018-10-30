@@ -482,6 +482,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.horizontal_header.setMovable(True)
 
     def on_column_resized(self, log_idx, old_size, new_size):
+        """Modifying columns specification during columns resizing."""
         idx_column = {value['idx']: key for key, value in self.columns_specification.items()}
         column = idx_column[log_idx]
         self.columns_specification[column]['width'] = new_size
@@ -490,6 +491,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         s.setValue('GeoCat/columns_specification', self.columns_specification)
 
     def on_column_moved(self, log_idx, old_vidx, new_vidx):
+        """Modifying columns specification during columns reordering."""
         idx_column = {value['idx']: key for key, value in self.columns_specification.items()}
         for visual_idx in range(self.horizontal_header.count()):
             logical_idx = self.horizontal_header.logicalIndex(visual_idx)
@@ -500,6 +502,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         s.setValue('GeoCat/columns_specification', self.columns_specification)
 
     def reorder_if_needed(self):
+        """Replacing logical indexes with visual indexes if values differ each other."""
         s = QSettings()
         refresh_settings = False
         self.columns_specification = s.value('GeoCat/columns_specification')
@@ -513,6 +516,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             s.setValue('GeoCat/columns_specification', self.columns_specification)
 
     def read_columns_specification(self):
+        """Reading columns specification from QSettings"""
         self.reorder_if_needed()
         s = QSettings()
         self.columns_specification = s.value('GeoCat/columns_specification')
@@ -583,10 +587,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         return cur.fetchone()[0]
 
     def add_selected_layers(self):
-        """
-            Add each of the selected layers to QGIS.
-        :return:
-        """
+        """Add each of the selected layers to QGIS."""
 
         selection = self.resultsTable.selectionModel().selectedRows()
         for i in range(len(selection)):
