@@ -23,13 +23,14 @@
 
 import datetime
 import traceback
+from operator import itemgetter
 from qgis.core import (
     QgsDataSourceURI,
     QgsVectorLayer,
     QgsMapLayerRegistry
 )
 
-from PyQt4.QtCore import Qt, QUrl, QSettings, QDate, SIGNAL
+from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
 # noinspection PyPackageRequirements
 from PyQt4.QtGui import (
     QDialog,
@@ -58,6 +59,16 @@ FORM_CLASS = load_ui('geo_cat_dialog_base')
 
 
 class GeoCatDialog(QDialog, FORM_CLASS):
+    COLUMNS_DEFAULTS = {
+            'table': {'label': 'Table', 'idx': 0, 'vidx': 0, 'width': None},
+            'schema': {'label': 'Schema', 'idx': 1, 'vidx': 1, 'width': None},
+            'abstract': {'label': 'Title', 'idx': 2, 'vidx': 2, 'width': None},
+            'type': {'label': 'Type', 'idx': 3, 'vidx': 3, 'width': None},
+            'private': {'label': 'Restricted?', 'idx': 4, 'vidx': 4, 'width': None},
+            'rpath': {'label': 'Path', 'idx': 5, 'vidx': 5, 'width': None},
+            'qgis_connection': {'label': 'QGIS PG Connection', 'idx': 6, 'vidx': 6, 'width': None}
+        }
+
     def __init__(self, iface, parent=None):
         self.db_con = None
         QDialog.__init__(self, parent)
@@ -73,6 +84,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.resize(width, height)
         self.iface = iface
         self.uc = UserCommunication(iface, 'Metadata Plugin')
+        self.columns_specification = dict()
         self.config = dict()
         self._setup_config()
         self.wclasses = {'QLineEdit': QLineEdit,
@@ -84,6 +96,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.meta_cols = None
 
         self.table_model = QStandardItemModel()
+        self.horizontal_header = self.resultsTable.horizontalHeader()
         self.init_table()
 
         self.showPrivateCheckBox.setCheckState(show_private_cs)
@@ -97,7 +110,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
         self.resultsTable.selectionModel().selectionChanged.connect(self.display_details_table)
         self.resultsTable.selectionModel().selectionChanged.connect(self.on_result_sel_changed)
-
+        self.horizontal_header.sectionMoved.connect(self.on_column_moved)
+        self.horizontal_header.sectionResized.connect(self.on_column_resized)
         self.helpPushButton.clicked.connect(self.show_help)
         self.closePushButton.clicked.connect(self.on_close_clicked)
         self.addSelectedPushButton.clicked.connect(self.add_selected_layers)
@@ -105,7 +119,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.browseAllCheckBox.stateChanged.connect(self.browse_all_check_box_toggled)
 
         # Keyboard shortcut to focus and highlight search text
-        self.connect(QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F), self), SIGNAL('activated()'), self.ctrl_f_pressed)
+        self.search_shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F), self)
+        self.search_shortcut.activated.connect(self.ctrl_f_pressed)
 
     def search_push_button_clicked(self, checked):
         self.search()
@@ -464,66 +479,95 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.table_model.clear()
         self.resultsTable.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.resultsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.horizontal_header.setMovable(True)
+
+    def on_column_resized(self, log_idx, old_size, new_size):
+        """Modifying columns specification during columns resizing."""
+        idx_column = {value['idx']: key for key, value in self.columns_specification.items()}
+        column = idx_column[log_idx]
+        self.columns_specification[column]['width'] = new_size
+
+        s = QSettings()
+        s.setValue('GeoCat/columns_specification', self.columns_specification)
+
+    def on_column_moved(self, log_idx, old_vidx, new_vidx):
+        """Modifying columns specification during columns reordering."""
+        idx_column = {value['idx']: key for key, value in self.columns_specification.items()}
+        for visual_idx in range(self.horizontal_header.count()):
+            logical_idx = self.horizontal_header.logicalIndex(visual_idx)
+            column = idx_column[logical_idx]
+            self.columns_specification[column]['vidx'] = visual_idx
+
+        s = QSettings()
+        s.setValue('GeoCat/columns_specification', self.columns_specification)
+
+    def reorder_if_needed(self):
+        """Replacing logical indexes with visual indexes if values differ each other."""
+        s = QSettings()
+        refresh_settings = False
+        self.columns_specification = s.value('GeoCat/columns_specification')
+        for k in self.columns_specification.keys():
+            idx = self.columns_specification[k]['idx']
+            vidx = self.columns_specification[k]['vidx']
+            if idx != vidx:
+                self.columns_specification[k]['idx'] = vidx
+                refresh_settings = True
+        if refresh_settings is True:
+            s.setValue('GeoCat/columns_specification', self.columns_specification)
+
+    def read_columns_specification(self):
+        """Reading columns specification from QSettings"""
+        self.reorder_if_needed()
+        s = QSettings()
+        self.columns_specification = s.value('GeoCat/columns_specification')
+        if not self.columns_specification:
+            self.columns_specification = self.COLUMNS_DEFAULTS
+        last_idx = max(val['idx'] for val in self.columns_specification.values())
+        for cc in self.cust_cols:
+            column = cc['col']
+            if column in self.columns_specification:
+                continue
+            label = cc['desc']
+            last_idx += 1
+            self.columns_specification[column] = {'label': label, 'idx': last_idx, 'vidx': last_idx, 'width': None}
 
     def appendToResultTable(self, include_private=True):
         # Header
         if len(self.search_results):
-            # Type
-            labels = ['Type']
-            # Mandatory informative columns
-            labels.extend(['Title', 'Abstract'])
-            # Custom columns
-            for cc in self.cust_cols:
-                labels.append(cc['desc'])
-            # Other information
-            labels.extend(['Restricted?', 'Schema', 'Table', 'Path', 'QGIS PG Connection'])
+            self.read_columns_specification()
+            labels = [val['label'] for val in sorted(self.columns_specification.values(), key=itemgetter('idx'))]
             self.table_model.setHorizontalHeaderLabels(labels)
-            self.resultsTable.resizeColumnsToContents()
+            for val in self.columns_specification.values():
+                col_width = val['width']
+                if col_width is not None:
+                    self.horizontal_header.resizeSection(val['idx'], col_width)
 
         # Content
+        sorted_spec = sorted(self.columns_specification.items(), key=lambda i: i[1]['idx'])
         for row, item in enumerate(self.search_results):
-
             row_items = []
-
-            # Type column
-            item_text = 'UNDEFINED'
-            if item['type'] == 'vector':
-                display_geom = item['geom_type'].lower()
-                if 'multi' in display_geom:
-                    display_geom = display_geom[5:]
-                item_text = 'Vector %s' % display_geom
-            elif item['type'] == 'raster':
-                item_text = 'Raster'
-            elif item['type'] == 'wms':
-                item_text = 'WMS'
-            new_item = QStandardItem(item_text)
-            row_items.append(new_item)
-
-            # Title and abstract
-            new_item = QStandardItem(item['title'])
-            row_items.append(new_item)
-            new_item = QStandardItem(item['abstract'])
-            row_items.append(new_item)
-
-            # Custom columns
-            for cc in self.cust_cols:
-                new_item = QStandardItem(item[cc['col']])
+            for k, v in sorted_spec:
+                if k == 'type':
+                    # Type column
+                    item_text = 'UNDEFINED'
+                    if item['type'] == 'vector':
+                        display_geom = item['geom_type'].lower()
+                        if 'multi' in display_geom:
+                            display_geom = display_geom[5:]
+                        item_text = 'Vector %s' % display_geom
+                    elif item['type'] == 'raster':
+                        item_text = 'Raster'
+                    elif item['type'] == 'wms':
+                        item_text = 'WMS'
+                    new_item = QStandardItem(item_text)
+                elif k == 'rpath':
+                    r_path_text = item[k]
+                    if r_path_text is None:
+                        r_path_text = 'N/A'
+                    new_item = QStandardItem(r_path_text)
+                else:
+                    new_item = QStandardItem(item[k])
                 row_items.append(new_item)
-
-            # Other information
-            new_item = QStandardItem(item['private'])
-            row_items.append(new_item)
-            new_item = QStandardItem(item['schema'])
-            row_items.append(new_item)
-            new_item = QStandardItem(item['table'])
-            row_items.append(new_item)
-            r_path_text = item['rpath']
-            if r_path_text is None:
-                r_path_text = 'N/A'
-            new_item = QStandardItem(r_path_text)
-            row_items.append(new_item)
-            new_item = QStandardItem(item['qgis_connection'])
-            row_items.append(new_item)
 
             self.table_model.appendRow(row_items)
             item = self.table_model.item(row)
@@ -543,10 +587,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         return cur.fetchone()[0]
 
     def add_selected_layers(self):
-        """
-            Add each of the selected layers to QGIS.
-        :return:
-        """
+        """Add each of the selected layers to QGIS."""
 
         selection = self.resultsTable.selectionModel().selectedRows()
         for i in range(len(selection)):
