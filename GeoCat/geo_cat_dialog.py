@@ -506,6 +506,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         s = QSettings()
         refresh_settings = False
         self.columns_specification = s.value('GeoCat/columns_specification')
+        if not self.columns_specification:
+            self.columns_specification = self.COLUMNS_DEFAULTS
         for k in self.columns_specification.keys():
             idx = self.columns_specification[k]['idx']
             vidx = self.columns_specification[k]['vidx']
