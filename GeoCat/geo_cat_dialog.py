@@ -62,11 +62,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
     COLUMNS_DEFAULTS = {
             'table': {'label': 'Table', 'idx': 0, 'vidx': 0, 'width': None},
             'schema': {'label': 'Schema', 'idx': 1, 'vidx': 1, 'width': None},
-            'abstract': {'label': 'Title', 'idx': 2, 'vidx': 2, 'width': None},
-            'type': {'label': 'Type', 'idx': 3, 'vidx': 3, 'width': None},
-            'private': {'label': 'Restricted?', 'idx': 4, 'vidx': 4, 'width': None},
-            'rpath': {'label': 'Path', 'idx': 5, 'vidx': 5, 'width': None},
-            'qgis_connection': {'label': 'QGIS PG Connection', 'idx': 6, 'vidx': 6, 'width': None}
+            'title': {'label': 'Title', 'idx': 2, 'vidx': 2, 'width': None},
+            'abstract': {'label': 'Abstract', 'idx': 3, 'vidx': 3, 'width': None},
+            'type': {'label': 'Type', 'idx': 4, 'vidx': 4, 'width': None},
+            'private': {'label': 'Restricted?', 'idx': 5, 'vidx': 5, 'width': None},
+            'rpath': {'label': 'Path', 'idx': 6, 'vidx':6, 'width': None},
+            'qgis_connection': {'label': 'QGIS PG Connection', 'idx': 7, 'vidx': 7, 'width': None}
         }
 
     def __init__(self, iface, parent=None):
@@ -506,7 +507,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         s = QSettings()
         refresh_settings = False
         self.columns_specification = s.value('GeoCat/columns_specification')
-        if not self.columns_specification:
+        if not self.columns_specification or set(self.columns_specification.keys()) != set(self.COLUMNS_DEFAULTS.keys()):
             self.columns_specification = self.COLUMNS_DEFAULTS
         for k in self.columns_specification.keys():
             idx = self.columns_specification[k]['idx']
@@ -522,7 +523,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.reorder_if_needed()
         s = QSettings()
         self.columns_specification = s.value('GeoCat/columns_specification')
-        if not self.columns_specification:
+        if not self.columns_specification or set(self.columns_specification.keys()) != set(self.COLUMNS_DEFAULTS.keys()):
             self.columns_specification = self.COLUMNS_DEFAULTS
         last_idx = max(val['idx'] for val in self.columns_specification.values())
         for cc in self.cust_cols:
@@ -668,7 +669,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             elif c['widget'] == 'QDateEdit':
                 if isinstance(val, datetime.datetime):
                     val = val.strftime('%Y-%m-%d')
-                date = QDate.fromString(val,Qt.ISODate)
+                date = QDate.fromString(val, Qt.ISODate)
                 wid.setDate(date)
 
     def clear_details(self):

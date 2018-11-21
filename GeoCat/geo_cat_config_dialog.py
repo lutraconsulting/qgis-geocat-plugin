@@ -21,18 +21,13 @@
  ***************************************************************************/
 """
 
-from collections import OrderedDict
 # noinspection PyPackageRequirements
 from PyQt4.QtGui import (
     QDialog,
     QWidget,
-    QLabel,
     QHBoxLayout,
-    QPushButton,
     QLineEdit,
-    QTextEdit,
     QComboBox,
-    QDateEdit
 )
 from PyQt4.QtCore import QSettings
 from dbutils import (
