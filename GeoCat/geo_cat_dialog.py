@@ -507,7 +507,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         s = QSettings()
         refresh_settings = False
         self.columns_specification = s.value('GeoCat/columns_specification')
-        if not self.columns_specification or set(self.columns_specification.keys()) != set(self.COLUMNS_DEFAULTS.keys()):
+        if not self.columns_specification or not set(self.COLUMNS_DEFAULTS.keys()).issubset(
+                set(self.columns_specification.keys())):
             self.columns_specification = self.COLUMNS_DEFAULTS
         for k in self.columns_specification.keys():
             idx = self.columns_specification[k]['idx']
@@ -523,7 +524,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.reorder_if_needed()
         s = QSettings()
         self.columns_specification = s.value('GeoCat/columns_specification')
-        if not self.columns_specification or set(self.columns_specification.keys()) != set(self.COLUMNS_DEFAULTS.keys()):
+        if not self.columns_specification or not set(self.COLUMNS_DEFAULTS.keys()).issubset(
+                set(self.columns_specification.keys())):
             self.columns_specification = self.COLUMNS_DEFAULTS
         last_idx = max(val['idx'] for val in self.columns_specification.values())
         for cc in self.cust_cols:
@@ -622,14 +624,19 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 layer_title = res['title']
                 if layer_title is None or layer_title == '':
                     layer_title = res['table']
-                layer_name = '%s (%s)' % (layer_title, display_geom)
+                layer_name = '{} ({})'.format(layer_title, display_geom)
+
                 vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
                 if vlayer.isValid():
                     QgsMapLayerRegistry.instance().addMapLayer(vlayer)
                 else:
-                    self.uc.bar_warn('{} is not a valid vector layer.')
-                    self.uc.log_info('{} is not a valid vector layer\n{}'.format(
-                        res['title'], res))
+                    uri.setKeyColumn('id')
+                    vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
+                    if vlayer.isValid():
+                        QgsMapLayerRegistry.instance().addMapLayer(vlayer)
+                    else:
+                        self.uc.bar_warn('{} is not a valid vector layer.')
+                        self.uc.log_info('{} is not a valid vector layer\n{}'.format(res['title'], res))
             else:
                 # Add the raster layer
                 layer_name = '{} (raster)'.format(res['title'])
@@ -704,4 +711,5 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         s.setValue("GeoCat/searchDialogWidth", self.width())
         s.setValue("GeoCat/searchDialogHeight", self.height())
         s.setValue("GeoCat/showPrivate", self.showPrivateCheckBox.checkState())
+        s.setValue('GeoCat/columns_specification', self.columns_specification)
         self.reject()
