@@ -30,7 +30,7 @@ from errors import CustomColumnException, ConnectionException
 from user_communication import UserCommunication
 
 
-class GeoCat:
+class GeoCat(object):
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
@@ -86,7 +86,6 @@ class GeoCat:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('Layer Metadata Search', message)
-
 
     def add_action(
         self,

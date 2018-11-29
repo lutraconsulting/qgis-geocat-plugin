@@ -95,7 +95,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.tableToResults = {}
         self.cust_cols = None
         self.meta_cols = None
-
+        self.view_pk = s.value('GeoCat/viewPrimaryKey', 'id', type=str)
         self.table_model = QStandardItemModel()
         self.horizontal_header = self.resultsTable.horizontalHeader()
         self.init_table()
@@ -593,7 +593,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
     def add_selected_layers(self):
         """Add each of the selected layers to QGIS."""
-
+        s = QSettings()
+        view_pk = s.value('GeoCat/viewPrimaryKey', 'id', type=str)
         selection = self.resultsTable.selectionModel().selectedRows()
         for i in range(len(selection)):
             index = selection[i]
@@ -630,13 +631,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 if vlayer.isValid():
                     QgsMapLayerRegistry.instance().addMapLayer(vlayer)
                 else:
-                    uri.setKeyColumn('id')
+                    uri.setKeyColumn(view_pk)
                     vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
                     if vlayer.isValid():
                         QgsMapLayerRegistry.instance().addMapLayer(vlayer)
                     else:
-                        self.uc.bar_warn('{} is not a valid vector layer.')
-                        self.uc.log_info('{} is not a valid vector layer\n{}'.format(res['title'], res))
+                        self.uc.bar_warn('\'{}\' table is not a valid vector layer.'.format(res['table']))
+                        self.uc.log_info('\'{}\' table is not a valid vector layer\n{}\n View PK column: \'{}\''.format(res['table'], res, view_pk))
             else:
                 # Add the raster layer
                 layer_name = '{} (raster)'.format(res['title'])
