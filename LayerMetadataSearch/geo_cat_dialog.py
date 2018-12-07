@@ -49,7 +49,8 @@ from psycopg2.extras import DictCursor
 from dbutils import (
     get_postgres_conn_info,
     get_connection,
-    list_columns
+    list_columns,
+    get_first_column
 )
 from errors import CustomColumnException, ConnectionException
 from user_communication import UserCommunication
@@ -95,7 +96,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.tableToResults = {}
         self.cust_cols = None
         self.meta_cols = None
-        self.view_pk = s.value('GeoCat/viewPrimaryKey', 'id', type=str)
         self.table_model = QStandardItemModel()
         self.horizontal_header = self.resultsTable.horizontalHeader()
         self.init_table()
@@ -594,7 +594,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
     def add_selected_layers(self):
         """Add each of the selected layers to QGIS."""
         s = QSettings()
-        view_pk = s.value('GeoCat/viewPrimaryKey', 'id', type=str)
+        view_pks = s.value('GeoCat/viewPrimaryKeys', '', type=str)
+        view_pks = [pk.strip() for pk in view_pks.strip().split(',') if pk.strip()]
         selection = self.resultsTable.selectionModel().selectedRows()
         for i in range(len(selection)):
             index = selection[i]
@@ -631,17 +632,31 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 if vlayer.isValid():
                     QgsMapLayerRegistry.instance().addMapLayer(vlayer)
                 else:
-                    uri.setKeyColumn(view_pk)
-                    vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
-                    if vlayer.isValid():
+                    vlayer, pk = self.layer_from_view(layer_name, uri, view_pks)
+                    if vlayer and vlayer.isValid():
                         QgsMapLayerRegistry.instance().addMapLayer(vlayer)
                     else:
                         self.uc.bar_warn('\'{}\' table is not a valid vector layer.'.format(res['table']))
-                        self.uc.log_info('\'{}\' table is not a valid vector layer\n{}\n View PK column: \'{}\''.format(res['table'], res, view_pk))
+                        self.uc.log_info('\'{}\' table is not a valid vector layer\n{}\n View PK column: \'{}\''.format(res['table'], res, pk))
             else:
                 # Add the raster layer
                 layer_name = '{} (raster)'.format(res['title'])
                 self.iface.addRasterLayer(res['rpath'], layer_name)
+
+    def layer_from_view(self, layer_name, uri, view_pks):
+        pkeys = view_pks[:]
+        pk = get_first_column(self._db_cur(), uri.schema(), uri.table())
+        pkeys.append(pk)
+
+        vlayer, last_pk = None, None
+        for pkey in pkeys:
+            last_pk = pkey
+            uri.setKeyColumn(pkey)
+            vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
+            if vlayer.isValid():
+                break
+
+        return vlayer, last_pk
 
     def display_details_table(self):
         selected_rows = self.resultsTable.selectionModel().selectedRows()

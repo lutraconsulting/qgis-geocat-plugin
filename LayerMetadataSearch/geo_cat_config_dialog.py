@@ -85,7 +85,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         vector_identifier = s.value('vectorIdentifier', 'vector', type=str)
         raster_identifier = s.value('rasterIdentifier', 'raster', type=str)
         wms_identifier = s.value('wmsIdentifier', 'wms', type=str)
-        view_primary_key = s.value('viewPrimaryKey', 'id', type=str)
+        view_primary_key = s.value('viewPrimaryKeys', '', type=str)
 
         if dlg_width != 0:
             self.resize(dlg_width, self.height())
@@ -94,7 +94,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.vectorIdentifierLineEdit.setText(vector_identifier)
         self.rasterIdentifierLineEdit.setText(raster_identifier)
         self.wmsIdentifierLineEdit.setText(wms_identifier)
-        self.view_pk_le.setText(view_primary_key)
+        self.view_pks_le.setText(view_primary_key)
 
         # TODO: if a defined connection is broken in any way,
         # this will raise an exception here
@@ -357,7 +357,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         s.setValue("GeoCat/vectorIdentifier", self.vectorIdentifierLineEdit.text())
         s.setValue("GeoCat/rasterIdentifier", self.rasterIdentifierLineEdit.text())
         s.setValue("GeoCat/wmsIdentifier", self.wmsIdentifierLineEdit.text())
-        s.setValue("GeoCat/viewPrimaryKey", self.view_pk_le.text())
+        s.setValue("GeoCat/viewPrimaryKeys", self.view_pks_le.text())
         self.set_custom_columns_settings()
         # Save the dialog width too
         s.setValue("GeoCat/settingsDialogWidth", self.width())

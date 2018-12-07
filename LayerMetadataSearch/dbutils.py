@@ -113,6 +113,18 @@ def list_columns(cursor, schema, table):
     return sorted(names)
 
 
+def get_first_column(cursor, schema, table):
+    sql = """
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = '{}'
+    AND table_name = '{}'
+    LIMIT 1""".format(schema, table)
+    cursor.execute(sql)
+    first_column = cursor.fetchall()[0][0]
+    return first_column
+
+
 def get_search_sql(search_text, geom_column, search_column, display_columns, extra_expr_columns, schema, table):
     """ Returns a tuple: (SQL query text, dictionary with values to replace variables with).
     """
