@@ -22,12 +22,8 @@
 """
 
 import os
-from PyQt4 import QtCore, uic
-from PyQt4.QtGui import QIcon
-
-# This import is to enable SIP API V2
-# noinspection PyUnresolvedReferences
-import qgis  # pylint: disable=unused-import
+from qgis.PyQt import QtCore, uic
+from qgis.PyQt.QtGui import QIcon
 
 
 def load_ui(name):

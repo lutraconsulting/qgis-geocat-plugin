@@ -25,35 +25,25 @@ import datetime
 import traceback
 from operator import itemgetter
 from qgis.core import (
-    QgsDataSourceURI,
     QgsVectorLayer,
-    QgsMapLayerRegistry
+    QgsProject,
+    QgsDataSourceUri
 )
 
-from PyQt4.QtCore import Qt, QUrl, QSettings, QDate
+from qgis.PyQt.QtCore import Qt, QUrl, QSettings, QDate
 # noinspection PyPackageRequirements
-from PyQt4.QtGui import (
-    QDialog,
-    QLabel,
-    QLineEdit,
-    QTextEdit,
-    QDateEdit,
-    QDesktopServices,
-    QStandardItemModel,
-    QStandardItem,
-    QAbstractItemView,
-    QShortcut,
-    QKeySequence)
+from qgis.PyQt.QtWidgets import QDialog, QLabel, QLineEdit, QTextEdit, QDateEdit, QAbstractItemView, QShortcut
+from qgis.PyQt.QtGui import QDesktopServices, QStandardItemModel, QStandardItem, QKeySequence
 from psycopg2.extras import DictCursor
 
-from dbutils import (
+from .dbutils import (
     get_postgres_conn_info,
     get_connection,
     list_columns,
     get_first_column
 )
-from errors import CustomColumnException, ConnectionException
-from user_communication import UserCommunication
+from .errors import CustomColumnException, ConnectionException
+from .user_communication import UserCommunication
 from .gc_utils import load_ui
 
 FORM_CLASS = load_ui('geo_cat_dialog_base')
@@ -436,7 +426,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 res['private'] = 'No'
             res['qgis_connection'] = qgis_con
             # Replace None types with '' for better usability
-            for k in res.keys():
+            for k in list(res.keys()):
                 if res[k] is None:
                     res[k] = ''
             self.search_results.append(res)
@@ -461,7 +451,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             else:
                 res['private'] = 'No'
             # Replace None types with '' for better usability
-            for k in res.keys():
+            for k in list(res.keys()):
                 if res[k] is None:
                     res[k] = ''
             self.search_results.append(res)
@@ -480,11 +470,11 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.table_model.clear()
         self.resultsTable.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.resultsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.horizontal_header.setMovable(True)
+        self.horizontal_header.setSectionsMovable(True)
 
     def on_column_resized(self, log_idx, old_size, new_size):
         """Modifying columns specification during columns resizing."""
-        idx_column = {value['idx']: key for key, value in self.columns_specification.items()}
+        idx_column = {value['idx']: key for key, value in list(self.columns_specification.items())}
         column = idx_column[log_idx]
         self.columns_specification[column]['width'] = new_size
 
@@ -493,7 +483,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
     def on_column_moved(self, log_idx, old_vidx, new_vidx):
         """Modifying columns specification during columns reordering."""
-        idx_column = {value['idx']: key for key, value in self.columns_specification.items()}
+        idx_column = {value['idx']: key for key, value in list(self.columns_specification.items())}
         for visual_idx in range(self.horizontal_header.count()):
             logical_idx = self.horizontal_header.logicalIndex(visual_idx)
             column = idx_column[logical_idx]
@@ -510,7 +500,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if not self.columns_specification or not set(self.COLUMNS_DEFAULTS.keys()).issubset(
                 set(self.columns_specification.keys())):
             self.columns_specification = self.COLUMNS_DEFAULTS
-        for k in self.columns_specification.keys():
+        for k in list(self.columns_specification.keys()):
             idx = self.columns_specification[k]['idx']
             vidx = self.columns_specification[k]['vidx']
             if idx != vidx:
@@ -527,7 +517,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if not self.columns_specification or not set(self.COLUMNS_DEFAULTS.keys()).issubset(
                 set(self.columns_specification.keys())):
             self.columns_specification = self.COLUMNS_DEFAULTS
-        last_idx = max(val['idx'] for val in self.columns_specification.values())
+        last_idx = max(val['idx'] for val in list(self.columns_specification.values()))
         for cc in self.cust_cols:
             column = cc['col']
             if column in self.columns_specification:
@@ -540,15 +530,15 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         # Header
         if len(self.search_results):
             self.read_columns_specification()
-            labels = [val['label'] for val in sorted(self.columns_specification.values(), key=itemgetter('idx'))]
+            labels = [val['label'] for val in sorted(list(self.columns_specification.values()), key=itemgetter('idx'))]
             self.table_model.setHorizontalHeaderLabels(labels)
-            for val in self.columns_specification.values():
+            for val in list(self.columns_specification.values()):
                 col_width = val['width']
                 if col_width is not None:
                     self.horizontal_header.resizeSection(val['idx'], col_width)
 
         # Content
-        sorted_spec = sorted(self.columns_specification.items(), key=lambda i: i[1]['idx'])
+        sorted_spec = sorted(list(self.columns_specification.items()), key=lambda i: i[1]['idx'])
         for row, item in enumerate(self.search_results):
             row_items = []
             for k, v in sorted_spec:
@@ -576,7 +566,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
             self.table_model.appendRow(row_items)
             item = self.table_model.item(row)
-            self.tableToResults[item] = row
+            self.tableToResults[item.index()] = row
 
     def get_col_type(self, col_name):
         cur = self._db_cur()
@@ -600,13 +590,13 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         for i in range(len(selection)):
             index = selection[i]
             item = self.table_model.item(index.row())
-            ix = self.tableToResults[item]
+            ix = self.tableToResults[item.index()]
             res = self.search_results[ix]
 
             if res['type'] == 'vector':
                 # Add the vector layer
                 qgis_connection = res['qgis_connection']
-                uri = QgsDataSourceURI()
+                uri = QgsDataSourceUri()
                 if qgis_connection:
                     con_info = get_postgres_conn_info(qgis_connection)
                 else:
@@ -630,14 +620,20 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
                 vlayer = QgsVectorLayer(uri.uri(), layer_name, 'postgres')
                 if vlayer.isValid():
-                    QgsMapLayerRegistry.instance().addMapLayer(vlayer)
+                    QgsProject.instance().addMapLayer(vlayer)
                 else:
-                    vlayer, pk = self.layer_from_view(layer_name, uri, view_pks)
-                    if vlayer and vlayer.isValid():
-                        QgsMapLayerRegistry.instance().addMapLayer(vlayer)
-                    else:
-                        self.uc.bar_warn('\'{}\' table is not a valid vector layer.'.format(res['table']))
-                        self.uc.log_info('\'{}\' table is not a valid vector layer\n{}\n View PK column: \'{}\''.format(res['table'], res, pk))
+                    try:
+                        vlayer, pk = self.layer_from_view(layer_name, uri, view_pks)
+                        if vlayer and vlayer.isValid():
+                            QgsProject.instance().addMapLayer(vlayer)
+                        else:
+                            self.uc.bar_warn('\'{}\' table is not a valid vector layer.'.format(res['table']))
+                            self.uc.log_info(
+                                '\'{}\' table is not a valid vector layer\n{}\n View PK column: \'{}\''.format(
+                                    res['table'], res, pk))
+                    except IndexError:
+                        self.uc.bar_warn('\'{}\' table can not be loaded.'.format(res['table']))
+                        self.uc.log_info('\'{}\' table can not be loaded, check connection details'.format(res['table']))
             else:
                 # Add the raster layer
                 layer_name = '{} (raster)'.format(res['title'])
@@ -645,7 +641,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
     def layer_from_view(self, layer_name, uri, view_pks):
         pkeys = view_pks[:]
-        pk = get_first_column(self._db_cur(), uri.schema(), uri.table())
+        try:
+            pk = get_first_column(self._db_cur(), uri.schema(), uri.table())
+        except IndexError:
+            raise
         pkeys.append(pk)
 
         vlayer, last_pk = None, None
@@ -663,7 +662,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if len(selected_rows):
             index = selected_rows[0]
             item = self.table_model.item(index.row())
-            ix = self.tableToResults[item]
+            ix = self.tableToResults[item.index()]
             self.display_details(ix)
 
     def display_details(self, current_row):
@@ -714,7 +713,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.addSelectedPushButton.setEnabled(False)
 
     def clear_layout(self, layout):
-        for i in reversed(range(layout.count())):
+        for i in reversed(list(range(layout.count()))):
             widgetToRemove = layout.itemAt(i).widget()
             # remove it from the layout list
             layout.removeWidget(widgetToRemove)

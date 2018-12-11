@@ -20,14 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import Qt, QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
-from geo_cat_dialog import GeoCatDialog
-from geo_cat_config_dialog import GeoCatConfigDialog
-import os.path
-from gc_utils import resources_path
-from errors import CustomColumnException, ConnectionException
-from user_communication import UserCommunication
+
+import os
+from qgis.PyQt.QtCore import Qt, QSettings, QTranslator, qVersion, QCoreApplication
+from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtGui import QIcon
+
+from .geo_cat_dialog import GeoCatDialog
+from .geo_cat_config_dialog import GeoCatConfigDialog
+from .gc_utils import resources_path
+from .errors import CustomColumnException, ConnectionException
+from .user_communication import UserCommunication
 
 
 class GeoCat(object):
@@ -194,7 +197,7 @@ class GeoCat(object):
         except ConnectionException:
             self.uc.show_warn('Database connection error. Check your settings!')
             return
-        except CustomColumnException, e:
+        except CustomColumnException as e:
             self.uc.show_warn(e[0])
             return
 

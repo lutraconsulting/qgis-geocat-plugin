@@ -22,15 +22,10 @@
 """
 
 # noinspection PyPackageRequirements
-from PyQt4.QtGui import (
-    QDialog,
-    QWidget,
-    QHBoxLayout,
-    QLineEdit,
-    QComboBox,
-)
-from PyQt4.QtCore import QSettings
-from dbutils import (
+from qgis.PyQt.QtWidgets import QDialog, QWidget, QHBoxLayout, QLineEdit, QComboBox
+from qgis.PyQt.QtCore import QSettings
+
+from .dbutils import (
     get_postgres_connections,
     get_postgres_conn_info,
     get_connection,
@@ -39,8 +34,8 @@ from dbutils import (
     list_columns
 )
 from .gc_utils import load_ui
-from errors import CustomColumnException
-from user_communication import UserCommunication
+from .errors import CustomColumnException
+from .user_communication import UserCommunication
 
 
 FORM_CLASS = load_ui('config_dialog_base')

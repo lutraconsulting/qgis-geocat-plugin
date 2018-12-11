@@ -20,9 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import *
-
 import psycopg2
+from qgis.PyQt.QtCore import QSettings
 
 
 def get_connection(conn_info):
@@ -86,7 +85,7 @@ def list_schemas(cursor):
     sql = "SELECT nspname FROM pg_namespace WHERE nspname !~ '^pg_' AND nspname != 'information_schema'"
     cursor.execute(sql)
 
-    names = map(lambda row: row[0], cursor.fetchall())
+    names = [row[0] for row in cursor.fetchall()]
     return sorted(names)
 
 
@@ -97,7 +96,7 @@ def list_tables(cursor, schema):
                 WHERE pg_class.relkind IN ('v', 'r') AND nspname = '%s'
                 ORDER BY nspname, relname""" % _quote_str(schema)
     cursor.execute(sql)
-    names = map(lambda row: row[0], cursor.fetchall())
+    names = [row[0] for row in cursor.fetchall()]
     return sorted(names)
 
 
@@ -109,7 +108,7 @@ def list_columns(cursor, schema, table):
         WHERE c.relname = '%s' AND nspname='%s' AND a.attnum > 0
         ORDER BY a.attnum""" % (_quote_str(table), _quote_str(schema))
     cursor.execute(sql)
-    names = map(lambda row: row[0], cursor.fetchall())
+    names = [row[0] for row in cursor.fetchall()]
     return sorted(names)
 
 
