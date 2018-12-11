@@ -29,9 +29,12 @@ def get_connection(conn_info):
     """ Connect to the database using conn_info dict:
      { 'host': ..., 'port': ..., 'database': ..., 'username': ..., 'password': ... }
     """
-    conn = psycopg2.connect(**conn_info)
-    conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-    return conn
+    try:
+        conn = psycopg2.connect(**conn_info)
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        return conn
+    except psycopg2.OperationalError:
+        return None
 
 
 def get_postgres_connections():

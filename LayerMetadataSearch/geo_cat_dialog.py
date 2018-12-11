@@ -191,10 +191,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if self.db_con is None or self.db_con.closed != 0:
             # Get a connection if we do not already have one or if it's been closed
             self.db_con = get_connection(con_info)
-        if dict:
-            return self.db_con.cursor(cursor_factory=DictCursor)
-        else:
-            return self.db_con.cursor()
+            # make sure connection could be created
+            if not self.db_con:
+                return
+        if self.db_con:
+            if dict:
+                return self.db_con.cursor(cursor_factory=DictCursor)
+            else:
+                return self.db_con.cursor()
 
     def show_help(self):
         help_url = 'https://github.com/lutraconsulting/qgis-geocat-plugin'
