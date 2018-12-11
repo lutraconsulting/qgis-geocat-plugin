@@ -22,6 +22,7 @@
 """
 import psycopg2
 from qgis.PyQt.QtCore import QSettings
+from qgis.core import QgsAuthMethodConfig, QgsApplication
 
 
 def get_connection(conn_info):
@@ -63,7 +64,15 @@ def get_postgres_conn_info(selected):
     conn_info["database"] = settings.value("database", "", type=str)
     username = settings.value("username", "", type=str)
     password = settings.value("password", "", type=str)
-    if len(username) != 0:
+    authconf = settings.value('authcfg', None)
+    if authconf:
+        auth_manager = QgsApplication.authManager()
+        conf = QgsAuthMethodConfig()
+        auth_manager.loadAuthenticationConfig(authconf, conf, True)
+        if conf.id():
+            conn_info["user"] = conf.config('username', '')
+            conn_info["password"] = conf.config('password', '')
+    else:
         conn_info["user"] = username
         conn_info["password"] = password
     return conn_info
