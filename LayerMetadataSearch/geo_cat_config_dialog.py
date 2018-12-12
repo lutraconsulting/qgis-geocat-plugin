@@ -22,15 +22,10 @@
 """
 
 # noinspection PyPackageRequirements
-from PyQt4.QtGui import (
-    QDialog,
-    QWidget,
-    QHBoxLayout,
-    QLineEdit,
-    QComboBox,
-)
-from PyQt4.QtCore import QSettings
-from dbutils import (
+from qgis.PyQt.QtWidgets import QDialog, QWidget, QHBoxLayout, QLineEdit, QComboBox
+from qgis.PyQt.QtCore import QSettings
+
+from .dbutils import (
     get_postgres_connections,
     get_postgres_conn_info,
     get_connection,
@@ -39,8 +34,8 @@ from dbutils import (
     list_columns
 )
 from .gc_utils import load_ui
-from errors import CustomColumnException
-from user_communication import UserCommunication
+from .errors import CustomColumnException
+from .user_communication import UserCommunication
 
 
 FORM_CLASS = load_ui('config_dialog_base')
@@ -105,6 +100,11 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         )
 
         if self.postGisConnectionComboBox.currentIndex() >= 0:
+            cur = self._get_cur()
+            if not cur:
+                msg = 'Can not connect to database. Please check connection.'
+                self.uc.log_info(msg)
+                self.uc.show_warn(msg)
 
             self.refresh_schemas()
 
@@ -156,6 +156,11 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.block_widgets_signals(block=False, class_list=[QComboBox])
 
     def on_connection_changed(self):
+        cur = self._get_cur()
+        if not cur:
+            msg = 'Can not connect to database. Please check connection.'
+            self.uc.log_info(msg)
+            self.uc.show_warn(msg)
         self.refresh_schemas()
 
     def on_metadata_schema_changed(self):
@@ -166,8 +171,8 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def _get_cur(self):
         ci = get_postgres_conn_info(self.postGisConnectionComboBox.currentText())
-        cur = get_connection(ci).cursor()
-        return cur
+        conn = get_connection(ci)
+        return conn.cursor() if conn else None
 
     def add_custom_column(self):
         self.set_custom_columns_settings()
@@ -191,59 +196,60 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.clear_layout(self.customColsLayout)
         self.removeCustomColumnBtn.setDisabled(True)
         cur = self._get_cur()
-        cols = list_columns(cur,
-                            self.metadataTableSchemaComboBox.currentText(),
-                            self.metadataTableNameComboBox.currentText())
-        classes = [
-            ['QLineEdit (single line)', 'QLineEdit'],
-            ['QTextEdit (multiple lines)', 'QTextEdit'],
-            ['QDateEdit', 'QDateEdit']
-        ]
-        s = QSettings()
-        s.beginGroup('GeoCat/CustomColumns')
-        self.cust_cols = []
-        for i, cc in enumerate(sorted(s.childGroups(), key=int)):
-            self.removeCustomColumnBtn.setEnabled(True)
-            self.cust_cols.insert(i, {})
-            s.beginGroup(cc)
-            desc = s.value('desc')
-            col = s.value('col')
-            wclass = s.value('widget', 'QLineEdit')
-            self.cust_cols[i]['desc'] = desc
-            self.cust_cols[i]['col'] = col
-            self.cust_cols[i]['widget'] = wclass
+        if cur:
+            cols = list_columns(cur,
+                                self.metadataTableSchemaComboBox.currentText(),
+                                self.metadataTableNameComboBox.currentText())
+            classes = [
+                ['QLineEdit (single line)', 'QLineEdit'],
+                ['QTextEdit (multiple lines)', 'QTextEdit'],
+                ['QDateEdit', 'QDateEdit']
+            ]
+            s = QSettings()
+            s.beginGroup('GeoCat/CustomColumns')
+            self.cust_cols = []
+            for i, cc in enumerate(sorted(s.childGroups(), key=int)):
+                self.removeCustomColumnBtn.setEnabled(True)
+                self.cust_cols.insert(i, {})
+                s.beginGroup(cc)
+                desc = s.value('desc')
+                col = s.value('col')
+                wclass = s.value('widget', 'QLineEdit')
+                self.cust_cols[i]['desc'] = desc
+                self.cust_cols[i]['col'] = col
+                self.cust_cols[i]['widget'] = wclass
 
-            # create custom column widget
-            # Where user specify description, column and widget class
-            w = QWidget()
-            w.setObjectName('cc_widget_{}'.format(i))
-            lout = QHBoxLayout()
+                # create custom column widget
+                # Where user specify description, column and widget class
+                w = QWidget()
+                w.setObjectName('cc_widget_{}'.format(i))
+                lout = QHBoxLayout()
 
-            # description widget
-            desc_w = QLineEdit()
-            desc_w.setObjectName('cc_desc_ledit_{}'.format(i))
-            desc_w.setText(desc)
-            lout.addWidget(desc_w)
+                # description widget
+                desc_w = QLineEdit()
+                desc_w.setObjectName('cc_desc_ledit_{}'.format(i))
+                desc_w.setText(desc)
+                lout.addWidget(desc_w)
 
-            # column widget
-            col_w = QComboBox()
-            col_w.addItems(cols)
-            col_w.setObjectName('cc_col_cbo_{}'.format(i))
-            col_w.setCurrentIndex(col_w.findText(col))
-            lout.addWidget(col_w)
+                # column widget
+                col_w = QComboBox()
+                col_w.addItems(cols)
+                col_w.setObjectName('cc_col_cbo_{}'.format(i))
+                col_w.setCurrentIndex(col_w.findText(col))
+                lout.addWidget(col_w)
 
-            # widget class widget
-            cla_w = QComboBox()
-            for c in classes:
-                cla_w.addItem(c[0], c[1])
-            cla_w.setObjectName('cc_class_cbo_{}'.format(i))
-            cla_w.setCurrentIndex(cla_w.findData(wclass))
-            lout.addWidget(cla_w)
+                # widget class widget
+                cla_w = QComboBox()
+                for c in classes:
+                    cla_w.addItem(c[0], c[1])
+                cla_w.setObjectName('cc_class_cbo_{}'.format(i))
+                cla_w.setCurrentIndex(cla_w.findData(wclass))
+                lout.addWidget(cla_w)
 
-            lout.setMargin(0)
-            w.setLayout(lout)
-            self.customColsLayout.addWidget(w)
-            s.endGroup()
+                lout.setMargin(0)
+                w.setLayout(lout)
+                self.customColsLayout.addWidget(w)
+                s.endGroup()
 
     def set_custom_columns_settings(self):
         classes = ['QLineEdit', 'QTextEdit', 'QDateEdit']
@@ -269,72 +275,76 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def refresh_schemas(self):
         cur = self._get_cur()
-        schemas = list_schemas(cur)
-        self.metadataTableSchemaComboBox.clear()
-        self.metadataTableSchemaComboBox.addItems(schemas)
+        if cur:
+            schemas = list_schemas(cur)
+            self.metadataTableSchemaComboBox.clear()
+            self.metadataTableSchemaComboBox.addItems(schemas)
 
     def refresh_tables(self):
         cur = self._get_cur()
-        tables = list_tables(cur, self.metadataTableSchemaComboBox.currentText())
-        self.metadataTableNameComboBox.clear()
-        self.metadataTableNameComboBox.addItems(tables)
+        if cur:
+            tables = list_tables(cur, self.metadataTableSchemaComboBox.currentText())
+            self.metadataTableNameComboBox.clear()
+            self.metadataTableNameComboBox.addItems(tables)
 
     def refresh_columns(self):
         cur = self._get_cur()
-        cols = list_columns(cur,
-                            self.metadataTableSchemaComboBox.currentText(),
-                            self.metadataTableNameComboBox.currentText())
+        if cur:
+            cols = list_columns(cur,
+                                self.metadataTableSchemaComboBox.currentText(),
+                                self.metadataTableNameComboBox.currentText())
 
-        self.titleColumnComboBox.clear()
-        self.titleColumnComboBox.addItems(cols)
+            self.titleColumnComboBox.clear()
+            self.titleColumnComboBox.addItems(cols)
 
-        self.abstractColumnComboBox.clear()
-        self.abstractColumnComboBox.addItems(cols)
+            self.abstractColumnComboBox.clear()
+            self.abstractColumnComboBox.addItems(cols)
 
-        self.layerSchemaNameComboBox.clear()
-        self.layerSchemaNameComboBox.addItems(cols)
+            self.layerSchemaNameComboBox.clear()
+            self.layerSchemaNameComboBox.addItems(cols)
 
-        self.layerTableNameComboBox.clear()
-        self.layerTableNameComboBox.addItems(cols)
+            self.layerTableNameComboBox.clear()
+            self.layerTableNameComboBox.addItems(cols)
 
-        self.layerTypeComboBox.clear()
-        self.layerTypeComboBox.addItems(cols)
+            self.layerTypeComboBox.clear()
+            self.layerTypeComboBox.addItems(cols)
 
-        self.rasterPathComboBox.clear()
-        self.rasterPathComboBox.addItems(cols)
+            self.rasterPathComboBox.clear()
+            self.rasterPathComboBox.addItems(cols)
 
-        self.ignoreComboBox.clear()
-        self.ignoreComboBox.addItem('--DISABLED--')
-        self.ignoreComboBox.addItems(cols)
+            self.ignoreComboBox.clear()
+            self.ignoreComboBox.addItem('--DISABLED--')
+            self.ignoreComboBox.addItems(cols)
 
-        self.privateComboBox.clear()
-        self.privateComboBox.addItem('--DISABLED--')
-        self.privateComboBox.addItems(cols)
+            self.privateComboBox.clear()
+            self.privateComboBox.addItem('--DISABLED--')
+            self.privateComboBox.addItems(cols)
 
-        self.qgis_connection_cbo.clear()
-        self.qgis_connection_cbo.addItem('--DISABLED--')
-        self.qgis_connection_cbo.addItems(cols)
+            self.qgis_connection_cbo.clear()
+            self.qgis_connection_cbo.addItem('--DISABLED--')
+            self.qgis_connection_cbo.addItems(cols)
 
     def check_custom_cols(self):
         cur = self._get_cur()
-        cols = list_columns(cur,
-                            self.metadataTableSchemaComboBox.currentText(),
-                            self.metadataTableNameComboBox.currentText())
-        for i, cc in enumerate(self.cust_cols):
-            desc_w = self.findChild(QLineEdit, 'cc_desc_ledit_{}'.format(i))
-            desc = desc_w.text()
-            if not desc:
-                msg = 'Empty description of custom column. Enter a description or remove the custom column.'
-                self.uc.log_info(msg)
-                self.uc.show_warn(msg)
-                raise CustomColumnException
+        if cur:
+            cols = list_columns(cur,
+                                self.metadataTableSchemaComboBox.currentText(),
+                                self.metadataTableNameComboBox.currentText())
+            for i, cc in enumerate(self.cust_cols):
+                desc_w = self.findChild(QLineEdit, 'cc_desc_ledit_{}'.format(i))
+                desc = desc_w.text()
+                if not desc:
+                    msg = 'Empty description of custom column. Enter a description or remove the custom column.'
+                    self.uc.log_info(msg)
+                    self.uc.show_warn(msg)
+                    raise CustomColumnException
 
-            col_name = self.findChild(QComboBox, 'cc_col_cbo_{}'.format(i)).currentText()
-            if col_name not in cols:
-                msg = 'Metadata table column not set. Make a choice or remove the custom column.'
-                self.uc.log_info(msg)
-                self.uc.show_warn(msg)
-                raise CustomColumnException
+                col_name = self.findChild(QComboBox, 'cc_col_cbo_{}'.format(i)).currentText()
+                if col_name not in cols:
+                    msg = 'Metadata table column not set. Make a choice or remove the custom column.'
+                    self.uc.log_info(msg)
+                    self.uc.show_warn(msg)
+                    raise CustomColumnException
 
     def all_done(self):
         try:
