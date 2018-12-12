@@ -353,8 +353,14 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             cur = self._db_cur(dict=False)
         else:
             con_info = get_postgres_conn_info(qgis_connection)
-            db_con = get_connection(con_info)
-            cur = db_con.cursor()
+            if con_info:
+                db_con = get_connection(con_info)
+            else:
+                raise ConnectionException('Connection details missing.')
+            if db_con:
+                cur = db_con.cursor()
+            else:
+                raise ConnectionException('Connection to DB failed.')
         cur.execute(qry)
         geom_and_type = cur.fetchone()
         if not geom_and_type:
@@ -411,29 +417,33 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         for row in vector_results:
             res = dict()
             title, abstract, schema, table, private, qgis_con = row[:6]
-            geom_col, ty = self.find_geom_and_type(schema, table, qgis_con)
-            for c in self.cust_cols:
-                col_name = c['col']
-                res[col_name] = row[col_name]
-            res['type'] = 'vector'
-            res['title'] = title
-            res['abstract'] = abstract
-            res['schema'] = schema
-            res['table'] = table
-            res['rpath'] = None
+            try:
+                geom_col, ty = self.find_geom_and_type(schema, table, qgis_con)
+                for c in self.cust_cols:
+                    col_name = c['col']
+                    res[col_name] = row[col_name]
+                res['type'] = 'vector'
+                res['title'] = title
+                res['abstract'] = abstract
+                res['schema'] = schema
+                res['table'] = table
+                res['rpath'] = None
 
-            res['geom_col'] = geom_col
-            res['geom_type'] = ty
-            if private:
-                res['private'] = 'Yes'
-            else:
-                res['private'] = 'No'
-            res['qgis_connection'] = qgis_con
-            # Replace None types with '' for better usability
-            for k in list(res.keys()):
-                if res[k] is None:
-                    res[k] = ''
-            self.search_results.append(res)
+                res['geom_col'] = geom_col
+                res['geom_type'] = ty
+                if private:
+                    res['private'] = 'Yes'
+                else:
+                    res['private'] = 'No'
+                res['qgis_connection'] = qgis_con
+                # Replace None types with '' for better usability
+                for k in list(res.keys()):
+                    if res[k] is None:
+                        res[k] = ''
+                self.search_results.append(res)
+            except ConnectionException as e:
+                self.uc.bar_warn(str(e) + ' Check the log.')
+                self.uc.log_info('Failed to fetch item for {}.{} in {}.'.format(schema, table, qgis_con))
 
         for row in raster_results:
             res = dict()
