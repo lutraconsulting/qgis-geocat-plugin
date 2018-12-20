@@ -11,7 +11,7 @@ name=Layer Metadata Search
 qgisMinimumVersion=3.0
 qgisMaximumVersion=3.99
 description=Search for PostGIS tables using metadata
-version=2.1.6
+version=2.2
 author=Lutra Consulting for Dartmoor National Park Authority
 email=info@lutraconsulting.co.uk
 
