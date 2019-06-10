@@ -44,7 +44,7 @@ FORM_CLASS = load_ui('config_dialog_base')
 class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def __init__(self, iface, parent=None):
-        import pydevd; pydevd.settrace(suspend=False)
+        # import pydevd; pydevd.settrace(suspend=False)
         """Constructor."""
         QDialog.__init__(self, parent)
         self.setupUi(self)
