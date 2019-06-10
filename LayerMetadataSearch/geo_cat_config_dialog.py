@@ -23,7 +23,7 @@
 
 # noinspection PyPackageRequirements
 from qgis.PyQt.QtWidgets import QDialog, QWidget, QHBoxLayout, QLineEdit, QComboBox
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings, QVariant
 
 from .dbutils import (
     get_postgres_connections,
@@ -44,7 +44,7 @@ FORM_CLASS = load_ui('config_dialog_base')
 class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def __init__(self, iface, parent=None):
-        # import pydevd; pydevd.settrace(suspend=False)
+        import pydevd; pydevd.settrace(suspend=False)
         """Constructor."""
         QDialog.__init__(self, parent)
         self.setupUi(self)
@@ -171,6 +171,11 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def _get_cur(self):
         ci = get_postgres_conn_info(self.postGisConnectionComboBox.currentText())
+        # Check for the replace QVariant(NULL) with None (else connection errors)
+        if ci['user'] == QVariant():
+            ci['user'] = None
+        if ci['password'] == QVariant():
+            ci['password'] = None
         conn = get_connection(ci)
         return conn.cursor() if conn else None
 
