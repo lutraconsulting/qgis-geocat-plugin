@@ -21,7 +21,7 @@
  ***************************************************************************/
 """
 import psycopg2
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings, QVariant
 from qgis.core import QgsAuthMethodConfig, QgsApplication
 
 
@@ -54,6 +54,7 @@ def current_postgres_connection():
 
 
 def get_postgres_conn_info(selected):
+    # import pydevd; pydevd.settrace()
     """ Read PostgreSQL connection details from QSettings stored by QGIS
     """
     settings = QSettings()
@@ -78,6 +79,11 @@ def get_postgres_conn_info(selected):
     else:
         conn_info["user"] = username
         conn_info["password"] = password
+    # Check for the replace QVariant(NULL) with None (else connection errors)
+    if conn_info["user"] == QVariant():
+        conn_info["user"] = None
+    if conn_info["password"] == QVariant():
+        conn_info["password"] = None
     return conn_info
 
 
