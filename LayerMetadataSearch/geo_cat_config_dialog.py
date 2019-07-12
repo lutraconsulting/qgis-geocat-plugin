@@ -172,9 +172,10 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
     def _get_cur(self):
         ci = get_postgres_conn_info(self.postGisConnectionComboBox.currentText())
         # Check for the replace QVariant(NULL) with None (else connection errors)
-        if ci['user'] == QVariant():
+        self.uc.show_warn(str(ci))
+        if ci['user'] == QVariant() or ci['user'] == '':
             ci['user'] = None
-        if ci['password'] == QVariant():
+        if ci['password'] == QVariant() or ci['password'] == '':
             ci['password'] = None
         conn = get_connection(ci)
         return conn.cursor() if conn else None

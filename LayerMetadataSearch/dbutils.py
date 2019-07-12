@@ -80,9 +80,9 @@ def get_postgres_conn_info(selected):
         conn_info["user"] = username
         conn_info["password"] = password
     # Check for the replace QVariant(NULL) with None (else connection errors)
-    if conn_info["user"] == QVariant():
+    if conn_info["user"] == QVariant() or conn_info["user"] == '':
         conn_info["user"] = None
-    if conn_info["password"] == QVariant():
+    if conn_info["password"] == QVariant() or conn_info["password"] == '':
         conn_info["password"] = None
     return conn_info
 
