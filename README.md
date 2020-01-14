@@ -16,7 +16,7 @@
 
 **Layer table** - For PostGIS datasets, the name of the table.
 
-**Raster path** - For raster file and WMS datasets, the path or URL of the dataset.
+**Raster path** - For raster file and WMS datasets, the path or source URL of the dataset.
 
 **Other fields** - The plugin can also search on and display other custom metadata fields - described later.
 
@@ -94,8 +94,25 @@ For layers consisting of a single image there is no need to create a VRT file.
 For raster files, the following columns of the metadata table should be populated as a minimum:
 
  * gem_title (user-friendly name)
- * dataset_type (set to, for example, `Raster File`)
+ * dataset_type (set to, for example, `Raster`)
  * path (absolute path to the raster file)
+
+
+### Adding WMS layers
+
+WMS layers can be specified by populating the *path* column in the metadata table with the QGIS *source* of the layer.
+
+To see a WMS layer's source, double-click its entry in the QGIS legend and open the *Information* tab:
+
+![](./Images/wms_source.png)
+
+The *Source* value highlighted above can be copied into the *path* column of the metadata table which will allow QGIS to load the layer.
+
+For WMS layers, the following columns of the metadata table should be populated as a minimum:
+
+ * gem_title (user-friendly name)
+ * dataset_type (set to, for example, `WMS`)
+ * path (source definition as described above)
 
 
 ## Custom metadata fields and advanced settings

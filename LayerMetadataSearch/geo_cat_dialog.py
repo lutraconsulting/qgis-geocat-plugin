@@ -27,7 +27,8 @@ from operator import itemgetter
 from qgis.core import (
     QgsVectorLayer,
     QgsProject,
-    QgsDataSourceUri
+    QgsDataSourceUri,
+    QgsRasterLayer
 )
 
 from qgis.PyQt.QtCore import Qt, QUrl, QSettings, QDate
@@ -648,10 +649,18 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                     except IndexError:
                         self.uc.bar_warn('\'{}\' table can not be loaded.'.format(res['table']))
                         self.uc.log_info('\'{}\' table can not be loaded, check connection details'.format(res['table']))
-            else:
-                # Add the raster layer
+            elif res['type'] == 'raster':
                 layer_name = '{} (raster)'.format(res['title'])
                 self.iface.addRasterLayer(res['rpath'], layer_name)
+            elif res['type'] == 'wms':
+                layer_name = '{} (raster)'.format(res['title'])
+                wms_layer = QgsRasterLayer(res['rpath'], layer_name, 'wms')
+                if wms_layer.isValid():
+                    QgsProject.instance().addMapLayer(wms_layer)
+                else:
+                    self.uc.bar_warn('Raster layer \'{}\' could not be loaded.'.format(res['title']))
+                    self.uc.log_info('Raster layer (\'{}\') could not be loaded. Its source is {}'.format(res['title'],res['rpath']))
+
 
     def layer_from_view(self, layer_name, uri, view_pks):
         pkeys = view_pks[:]
