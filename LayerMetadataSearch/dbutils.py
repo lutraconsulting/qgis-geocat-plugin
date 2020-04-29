@@ -53,7 +53,7 @@ def current_postgres_connection():
 """
 
 
-def get_postgres_conn_info(selected):
+def get_postgres_conn_info_and_meta(selected):
     # import pydevd; pydevd.settrace()
     """ Read PostgreSQL connection details from QSettings stored by QGIS
     """
@@ -63,12 +63,15 @@ def get_postgres_conn_info(selected):
         return {}
 
     conn_info = {}
+    conn_meta = {}
     conn_info["host"] = settings.value("host", "", type=str)
     conn_info["port"] = settings.value("port", 5432, type=int)
     conn_info["database"] = settings.value("database", "", type=str)
     username = settings.value("username", "", type=str)
     password = settings.value("password", "", type=str)
     authconf = settings.value('authcfg', None)
+    estimated_metadata = settings.value('estimatedMetadata', 'false', type=str)
+    conn_meta["estimated_metadata"] = estimated_metadata == 'true'
     if authconf:
         auth_manager = QgsApplication.authManager()
         conf = QgsAuthMethodConfig()
@@ -84,7 +87,7 @@ def get_postgres_conn_info(selected):
         conn_info["user"] = None
     if conn_info["password"] == QVariant() or conn_info["password"] == '':
         conn_info["password"] = None
-    return conn_info
+    return conn_info, conn_meta
 
 
 def _quote(identifier):

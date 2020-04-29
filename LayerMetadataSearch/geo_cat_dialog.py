@@ -38,7 +38,7 @@ from qgis.PyQt.QtGui import QDesktopServices, QStandardItemModel, QStandardItem,
 from psycopg2.extras import DictCursor
 
 from .dbutils import (
-    get_postgres_conn_info,
+    get_postgres_conn_info_and_meta,
     get_connection,
     list_columns,
     get_first_column
@@ -186,7 +186,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['wms_identifier'] = s.value('GeoCat/wmsIdentifier', 'wms', type=str)
 
     def _db_cur(self, dict=True):
-        con_info = get_postgres_conn_info(self.config['connection'])
+        con_info, con_meta = get_postgres_conn_info_and_meta(self.config['connection'])
         if not self.config['connection']:
             return None
         if self.db_con is None or self.db_con.closed != 0:
@@ -353,7 +353,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         if not qgis_connection:
             cur = self._db_cur(dict=False)
         else:
-            con_info = get_postgres_conn_info(qgis_connection)
+            con_info, con_meta = get_postgres_conn_info_and_meta(qgis_connection)
             if con_info:
                 db_con = get_connection(con_info)
             else:
@@ -613,14 +613,20 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                 qgis_connection = res['qgis_connection']
                 uri = QgsDataSourceUri()
                 if qgis_connection:
-                    con_info = get_postgres_conn_info(qgis_connection)
+                    con_info, con_meta = get_postgres_conn_info_and_meta(qgis_connection)
                 else:
-                    con_info = get_postgres_conn_info(self.config['connection'])
+                    con_info, con_meta = get_postgres_conn_info_and_meta(self.config['connection'])
                 uri.setConnection(con_info['host'],
                                   str(con_info['port']),
                                   con_info['database'],
                                   con_info.get('user', None),
                                   con_info.get('password', None))
+                # Set useEstimatedMetadata based on database connection settings
+                if con_meta["estimated_metadata"]:
+                    uri.setUseEstimatedMetadata(True)
+                    if uri.hasParam('checkPrimaryKeyUnicity'):
+                        uri.removeParam('checkPrimaryKeyUnicity')
+                    uri.setParam('checkPrimaryKeyUnicity', '0')
 
                 display_geom = res['geom_type'].lower()
                 if display_geom.startswith('multi'):

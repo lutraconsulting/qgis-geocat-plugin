@@ -27,7 +27,7 @@ from qgis.PyQt.QtCore import QSettings, QVariant
 
 from .dbutils import (
     get_postgres_connections,
-    get_postgres_conn_info,
+    get_postgres_conn_info_and_meta,
     get_connection,
     list_schemas,
     list_tables,
@@ -170,7 +170,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.refresh_columns()
 
     def _get_cur(self):
-        ci = get_postgres_conn_info(self.postGisConnectionComboBox.currentText())
+        ci, cm = get_postgres_conn_info_and_meta(self.postGisConnectionComboBox.currentText())
         # Check for the replace QVariant(NULL) with None (else connection errors)
         if ci['user'] == QVariant() or ci['user'] == '':
             ci['user'] = None

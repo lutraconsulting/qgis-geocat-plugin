@@ -196,8 +196,8 @@ class GeoCat(object):
             self.dlg.setup_custom_widgets()
         except ConnectionException:
             # Report back what we tried to connect with
-            from .dbutils import get_postgres_conn_info
-            con_info = get_postgres_conn_info(self.dlg.config['connection'])
+            from .dbutils import get_postgres_conn_info_and_meta
+            con_info, con_meta = get_postgres_conn_info_and_meta(self.dlg.config['connection'])
             self.uc.show_warn('Database connection error. '
                               'Settings used to connect where: host="%s" (%s), '
                               'port="%s" (%s), '
