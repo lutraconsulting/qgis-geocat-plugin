@@ -31,7 +31,7 @@ from qgis.core import (
     QgsRasterLayer
 )
 
-from qgis.PyQt.QtCore import Qt, QUrl, QSettings, QDate
+from qgis.PyQt.QtCore import Qt, QUrl, QSettings, QDate, QSortFilterProxyModel
 # noinspection PyPackageRequirements
 from qgis.PyQt.QtWidgets import QDialog, QLabel, QLineEdit, QTextEdit, QDateEdit, QAbstractItemView, QShortcut
 from qgis.PyQt.QtGui import QDesktopServices, QStandardItemModel, QStandardItem, QKeySequence
@@ -88,6 +88,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.cust_cols = None
         self.meta_cols = None
         self.table_model = QStandardItemModel()
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.table_model)
+        self.resultsTable.setSortingEnabled(True)
         self.horizontal_header = self.resultsTable.horizontalHeader()
         self.init_table()
 
@@ -480,8 +483,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.clear_details()
 
     def init_table(self):
-        self.resultsTable.setModel(self.table_model)
-        self.resultsTable.setSortingEnabled(True)
+        self.resultsTable.setModel(self.proxy_model)
         self.table_model.clear()
         self.resultsTable.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.resultsTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -603,7 +605,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         view_pks = [pk.strip() for pk in view_pks.strip().split(',') if pk.strip()]
         selection = self.resultsTable.selectionModel().selectedRows()
         for i in range(len(selection)):
-            index = selection[i]
+            proxy_index = selection[i]
+            index = self.proxy_model.mapToSource(proxy_index)
             item = self.table_model.item(index.row())
             ix = self.tableToResults[item.index()]
             res = self.search_results[ix]
@@ -667,7 +670,6 @@ class GeoCatDialog(QDialog, FORM_CLASS):
                     self.uc.bar_warn('Raster layer \'{}\' could not be loaded.'.format(res['title']))
                     self.uc.log_info('Raster layer (\'{}\') could not be loaded. Its source is {}'.format(res['title'],res['rpath']))
 
-
     def layer_from_view(self, layer_name, uri, view_pks):
         pkeys = view_pks[:]
         try:
@@ -689,7 +691,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
     def display_details_table(self):
         selected_rows = self.resultsTable.selectionModel().selectedRows()
         if len(selected_rows):
-            index = selected_rows[0]
+            proxy_index = selected_rows[0]
+            index = self.proxy_model.mapToSource(proxy_index)
             item = self.table_model.item(index.row())
             ix = self.tableToResults[item.index()]
             self.display_details(ix)
@@ -741,7 +744,8 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         else:
             self.addSelectedPushButton.setEnabled(False)
 
-    def clear_layout(self, layout):
+    @staticmethod
+    def clear_layout(layout):
         for i in reversed(list(range(layout.count()))):
             widgetToRemove = layout.itemAt(i).widget()
             # remove it from the layout list
