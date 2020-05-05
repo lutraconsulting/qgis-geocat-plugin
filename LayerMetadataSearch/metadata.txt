@@ -11,7 +11,7 @@ name=Layer Metadata Search
 qgisMinimumVersion=3.0
 qgisMaximumVersion=3.99
 description=Search for PostGIS tables using metadata
-version=2.2.7
+version=2.2.8
 author=Lutra Consulting for Dartmoor National Park Authority
 email=info@lutraconsulting.co.uk
 
@@ -24,7 +24,9 @@ repository=https://github.com/lutraconsulting/qgis-geocat-plugin
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog=2.2.7 Bug fix
+changelog=2.2.8 Bug fix
+ - Fixed way of loading layers if sorting is enabled
+ <p>2.2.7 Bug fix
  - Ensured that Use Estimated Metadata option in pg connection settings respected which was causing slow load issues in QGIS 3.10.x
  <p>2.2.6 Bug fix
  - Fixed broken WMS layer support
@@ -37,7 +39,7 @@ changelog=2.2.7 Bug fix
  <p>2.2.2 Bug fixes
  - Fixed bug introduced by last bug fix
  <p>2.2.1 Bug fixes
- - Fixed issue with passworless connections failing on first use
+ - Fixed issue with passwordless connections failing on first use
  <p>2.2 Ported to QGIS 3
  <p>2.1.6 Feature release:
  - Added using first column as primary key for PostGIS views as default and last choice behavior
@@ -56,7 +58,7 @@ changelog=2.2.7 Bug fix
  <p>2.1 Feature release:
  - Multiple-database support
  <p>2.0.5 Bug fixes:
- - Fixed issue occuring when having 'ignore' column set to --DISABLED--
+ - Fixed issue occurring when having 'ignore' column set to --DISABLED--
  <p>2.0.4 Bug fixes:
  - Only display items in search results which have a corresponding row in public.geometry_columns
  <p>2.0.3 Bug fixes:
