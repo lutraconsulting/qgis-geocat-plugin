@@ -23,7 +23,9 @@
 
 # noinspection PyPackageRequirements
 from qgis.PyQt.QtWidgets import QDialog, QWidget, QHBoxLayout, QLineEdit, QComboBox
-from qgis.PyQt.QtCore import QSettings, QVariant
+from qgis.PyQt.QtCore import QVariant
+
+from qgis.core import QgsSettings
 
 from .dbutils import (
     get_postgres_connections,
@@ -62,7 +64,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.buttonBox.accepted.connect(self.all_done)
 
         # See if we can put back the old config
-        s = QSettings()
+        s = QgsSettings()
         s.beginGroup('GeoCat')
         dlg_width = s.value('settingsDialogWidth', 0, type=int)
         req_con = s.value('connection', '', type=str)
@@ -181,7 +183,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def add_custom_column(self):
         self.set_custom_columns_settings()
-        s = QSettings()
+        s = QgsSettings()
         s.beginGroup('GeoCat/CustomColumns')
         cc_nr = str(len(s.childGroups()))
         s.beginGroup(cc_nr)
@@ -191,7 +193,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
         self.get_custom_columns()
 
     def remove_custom_column(self):
-        s = QSettings()
+        s = QgsSettings()
         s.beginGroup('GeoCat/CustomColumns')
         last_col = s.childGroups()[-1]
         s.remove(last_col)
@@ -210,7 +212,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
                 ['QTextEdit (multiple lines)', 'QTextEdit'],
                 ['QDateEdit', 'QDateEdit']
             ]
-            s = QSettings()
+            s = QgsSettings()
             s.beginGroup('GeoCat/CustomColumns')
             self.cust_cols = []
             for i, cc in enumerate(sorted(s.childGroups(), key=int)):
@@ -258,7 +260,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
 
     def set_custom_columns_settings(self):
         classes = ['QLineEdit', 'QTextEdit', 'QDateEdit']
-        s = QSettings()
+        s = QgsSettings()
         s.beginGroup('GeoCat/CustomColumns')
         s.remove('')
         for i, cc in enumerate(self.cust_cols):
@@ -356,7 +358,7 @@ class GeoCatConfigDialog(QDialog, FORM_CLASS):
             self.check_custom_cols()
         except CustomColumnException:
             return
-        s = QSettings()
+        s = QgsSettings()
         s.setValue("GeoCat/connection", self.postGisConnectionComboBox.currentText())
         s.setValue("GeoCat/metadataTableSchema", self.metadataTableSchemaComboBox.currentText())
         s.setValue("GeoCat/metadataTableName", self.metadataTableNameComboBox.currentText())

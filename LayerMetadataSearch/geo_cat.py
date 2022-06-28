@@ -22,9 +22,13 @@
 """
 
 import os
-from qgis.PyQt.QtCore import Qt, QSettings, QTranslator, qVersion, QCoreApplication
+import psycopg2
+
+from qgis.PyQt.QtCore import Qt, QTranslator, qVersion, QCoreApplication
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtGui import QIcon
+
+from qgis.core import QgsSettings
 
 from .geo_cat_dialog import GeoCatDialog
 from .geo_cat_config_dialog import GeoCatConfigDialog
@@ -50,7 +54,7 @@ class GeoCat(object):
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale = QgsSettings().value('locale/userLocale')[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -188,24 +192,33 @@ class GeoCat(object):
         # remove the toolbar
         del self.dlg, self.toolbar
 
+    def is_configured(self):
+        """Check if the plugin is configured."""
+        s = QgsSettings()
+        s.beginGroup('GeoCat')
+        conn = s.value('connection', '', type=str)
+        s.endGroup()
+        return conn != ''
+
     def run(self):
         """Run method that performs all the real work"""
+        if not self.is_configured():
+            self.uc.show_warn('Please configure the plugin first!')
+            self.configure()
         self.dlg._setup_config()
         # refresh custom columns widgets
         try:
             self.dlg.setup_custom_widgets()
-        except ConnectionException:
+        except (ConnectionException, psycopg2.OperationalError) as e:
             # Report back what we tried to connect with
             from .dbutils import get_postgres_conn_info_and_meta
             con_info, con_meta = get_postgres_conn_info_and_meta(self.dlg.config['connection'])
             self.uc.show_warn('Database connection error. '
-                              'Settings used to connect where: host="%s" (%s), '
-                              'port="%s" (%s), '
-                              'database="%s" (%s), '
-                              'user="%s" (%s), '
-                              'password="%s" (%s)' % (str(con_info['host']), type(con_info['host']), str(con_info['port']), type(con_info['port']),
-                                                                     str(con_info['database']), type(con_info['database']), str(con_info['user']), type(con_info['user']),
-                                                                     str(con_info['password']), type(con_info['password'])))
+                              f'Settings used to connect where: host="{str(con_info["host"])}" ({type(con_info["host"])}), '
+                              f'port="{str(con_info["port"])}" ({type(con_info["port"])}), '
+                              f'database="{str(con_info["database"])}" ({type(con_info["database"])}), '
+                              f'user="{str(con_info["user"])}" ({type(con_info["user"])})\n\n{repr(e)}'
+                              )
             return
         except CustomColumnException as e:
             self.uc.show_warn(e[0])

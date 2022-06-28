@@ -31,11 +31,13 @@ from qgis.core import (
     QgsRasterLayer
 )
 
-from qgis.PyQt.QtCore import Qt, QUrl, QSettings, QDate, QSortFilterProxyModel
+from qgis.PyQt.QtCore import Qt, QUrl, QDate, QSortFilterProxyModel
 # noinspection PyPackageRequirements
 from qgis.PyQt.QtWidgets import QDialog, QLabel, QLineEdit, QTextEdit, QDateEdit, QAbstractItemView, QShortcut
 from qgis.PyQt.QtGui import QDesktopServices, QStandardItemModel, QStandardItem, QKeySequence
 from psycopg2.extras import DictCursor
+
+from qgis.core import QgsSettings
 
 from .dbutils import (
     get_postgres_conn_info_and_meta,
@@ -66,7 +68,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.db_con = None
         QDialog.__init__(self, parent)
         self.setupUi(self)
-        s = QSettings()
+        s = QgsSettings()
         is_maximised = s.value('GeoCat/searchDialogMaximised', False, type=bool)
         width = s.value('GeoCat/searchDialogWidth', 0, type=int)
         height = s.value('GeoCat/searchDialogHeight', 0, type=int)
@@ -139,7 +141,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
     def setup_custom_widgets(self):
         self.clear_layout(self.customColsLayout)
         # read custom columns settings
-        s = QSettings()
+        s = QgsSettings()
         s.beginGroup('GeoCat/CustomColumns')
         self.cust_cols = []
         for i, cc in enumerate(sorted(s.childGroups(), key=int)):
@@ -171,7 +173,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             self.customColsLayout.addWidget(w)
 
     def _setup_config(self):
-        s = QSettings()
+        s = QgsSettings()
         self.config['connection'] = s.value('GeoCat/connection', '', type=str)
         self.config['cat_schema'] = '"%s"' % s.value('GeoCat/metadataTableSchema', '', type=str)
         self.config['cat_table'] = '"%s"' % s.value('GeoCat/metadataTableName', '', type=str)
@@ -189,7 +191,10 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         self.config['wms_identifier'] = s.value('GeoCat/wmsIdentifier', 'wms', type=str)
 
     def _db_cur(self, dict=True):
-        con_info, con_meta = get_postgres_conn_info_and_meta(self.config['connection'])
+        try:
+            con_info, con_meta = get_postgres_conn_info_and_meta(self.config['connection'])
+        except ValueError:
+            return None
         if not self.config['connection']:
             return None
         if self.db_con is None or self.db_con.closed != 0:
@@ -495,7 +500,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
         column = idx_column[log_idx]
         self.columns_specification[column]['width'] = new_size
 
-        s = QSettings()
+        s = QgsSettings()
         s.setValue('GeoCat/columns_specification', self.columns_specification)
 
     def on_column_moved(self, log_idx, old_vidx, new_vidx):
@@ -506,12 +511,12 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             column = idx_column[logical_idx]
             self.columns_specification[column]['vidx'] = visual_idx
 
-        s = QSettings()
+        s = QgsSettings()
         s.setValue('GeoCat/columns_specification', self.columns_specification)
 
     def reorder_if_needed(self):
         """Replacing logical indexes with visual indexes if values differ each other."""
-        s = QSettings()
+        s = QgsSettings()
         refresh_settings = False
         self.columns_specification = s.value('GeoCat/columns_specification')
         if not self.columns_specification or not set(self.COLUMNS_DEFAULTS.keys()).issubset(
@@ -527,9 +532,9 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             s.setValue('GeoCat/columns_specification', self.columns_specification)
 
     def read_columns_specification(self):
-        """Reading columns specification from QSettings"""
+        """Reading columns specification from QgsSettings"""
         self.reorder_if_needed()
-        s = QSettings()
+        s = QgsSettings()
         self.columns_specification = s.value('GeoCat/columns_specification')
         if not self.columns_specification or not set(self.COLUMNS_DEFAULTS.keys()).issubset(
                 set(self.columns_specification.keys())):
@@ -600,7 +605,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
 
     def add_selected_layers(self):
         """Add each of the selected layers to QGIS."""
-        s = QSettings()
+        s = QgsSettings()
         view_pks = s.value('GeoCat/viewPrimaryKeys', '', type=str)
         view_pks = [pk.strip() for pk in view_pks.strip().split(',') if pk.strip()]
         selection = self.resultsTable.selectionModel().selectedRows()
@@ -754,7 +759,7 @@ class GeoCatDialog(QDialog, FORM_CLASS):
             widgetToRemove.setParent(None)
 
     def on_close_clicked(self):
-        s = QSettings()
+        s = QgsSettings()
         s.setValue("GeoCat/searchDialogMaximised", self.isMaximized())
         s.setValue("GeoCat/searchDialogWidth", self.width())
         s.setValue("GeoCat/searchDialogHeight", self.height())

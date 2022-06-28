@@ -21,8 +21,8 @@
  ***************************************************************************/
 """
 import psycopg2
-from qgis.PyQt.QtCore import QSettings, QVariant
-from qgis.core import QgsAuthMethodConfig, QgsApplication
+from qgis.PyQt.QtCore import QVariant
+from qgis.core import QgsAuthMethodConfig, QgsApplication, QgsSettings
 
 
 def get_connection(conn_info):
@@ -38,16 +38,16 @@ def get_connection(conn_info):
 
 
 def get_postgres_connections():
-    """ Read PostgreSQL connection names from QSettings stored by QGIS
+    """ Read PostgreSQL connection names from QgsSettings stored by QGIS
     """
-    settings = QSettings()
+    settings = QgsSettings()
     settings.beginGroup(u"/PostgreSQL/connections/")
     return settings.childGroups()
 
 
 """
 def current_postgres_connection():
-    settings = QSettings()
+    settings = QgsSettings()
     settings.beginGroup("/PostGISSearch")
     return settings.value("connection", "", type=str)
 """
@@ -55,9 +55,8 @@ def current_postgres_connection():
 
 def get_postgres_conn_info_and_meta(selected):
     # import pydevd; pydevd.settrace()
-    """ Read PostgreSQL connection details from QSettings stored by QGIS
-    """
-    settings = QSettings()
+    """ Read PostgreSQL connection details from QgsSettings stored by QGIS """
+    settings = QgsSettings()
     settings.beginGroup(u"/PostgreSQL/connections/" + selected)
     if not settings.contains("database"): # non-existent entry?
         return {}
