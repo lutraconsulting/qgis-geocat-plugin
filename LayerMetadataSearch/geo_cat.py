@@ -209,7 +209,10 @@ class GeoCat(object):
         # refresh custom columns widgets
         try:
             self.dlg.setup_custom_widgets()
-        except (ConnectionException, psycopg2.OperationalError) as e:
+        except psycopg2.OperationalError as e:
+            self.uc.show_warn(f'Database error. Check the plugin configuration and try again.\n\n{repr(e)}')
+            return
+        except ConnectionException:
             # Report back what we tried to connect with
             from .dbutils import get_postgres_conn_info_and_meta
             con_info, con_meta = get_postgres_conn_info_and_meta(self.dlg.config['connection'])

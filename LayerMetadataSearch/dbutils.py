@@ -56,13 +56,13 @@ def current_postgres_connection():
 def get_postgres_conn_info_and_meta(selected):
     # import pydevd; pydevd.settrace()
     """ Read PostgreSQL connection details from QgsSettings stored by QGIS """
-    settings = QgsSettings()
-    settings.beginGroup(u"/PostgreSQL/connections/" + selected)
-    if not settings.contains("database"): # non-existent entry?
-        return {}
-
     conn_info = {}
     conn_meta = {}
+    settings = QgsSettings()
+    settings.beginGroup(u"/PostgreSQL/connections/" + selected)
+    if not settings.contains("database"):  # non-existent entry?
+        return conn_info, conn_meta
+
     conn_info["host"] = settings.value("host", "", type=str)
     conn_info["port"] = settings.value("port", 5432, type=int)
     conn_info["database"] = settings.value("database", "", type=str)
